@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 	"net/http"
 	"runtime"
@@ -20,13 +21,12 @@ const (
 )
 
 var (
-	g             gauge
-	c             counter
-	m             runtime.MemStats
-	ticker_poll   = time.NewTicker(pollInterval)
-	ticker_report = time.NewTicker(reportInterval)
-	agent         = http.Client{}
-	endpoint      = "http://172.0.0.1:8080/update/"
+	g            gauge
+	c            counter
+	m            runtime.MemStats
+	tickerpoll   = time.NewTicker(pollInterval)
+	tickerreport = time.NewTicker(reportInterval)
+	endpoint     string
 )
 
 func collectMetrics(metricList metricsMap) metricsMap {
@@ -64,9 +64,6 @@ func collectMetrics(metricList metricsMap) metricsMap {
 	return metricList
 }
 
-func getMetrics(m runtime.MemStats) {
-	runtime.ReadMemStats(&m)
-}
 func main() {
 	Metrics := metricsMap{
 		"Alloc":         g,
@@ -99,22 +96,21 @@ func main() {
 		"PollCount":     c,
 		"RandomValue":   g,
 	}
-	for range ticker_poll.C {
+
+	for range tickerpoll.C {
 		c += 1
-		getMetrics(m)
-		fmt.Println(collectMetrics(Metrics))
+		collectMetrics(Metrics)
 	}
-	for range ticker_report.C {
+
+	for range tickerreport.C {
 		for k, v := range Metrics {
 			value := fmt.Sprint(v)
 			types := fmt.Sprintf("%T", v)
-			endpoint = endpoint + types + "/" + k + "/" + value + "/"
+			endpoint = "http://172.0.0.1:8080/update/" + types + "/" + k + "/" + value + "/"
 			_, err := http.Post(endpoint, "text/plain", nil)
 			if err != nil {
-				fmt.Print(err)
+				log.Fatal(err)
 			}
 		}
 	}
-	defer ticker_poll.Stop()
-	defer ticker_report.Stop()
 }
