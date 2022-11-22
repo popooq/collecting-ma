@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -66,9 +67,11 @@ func collectMetrics(metricList metricsMap) metricsMap {
 
 func sendMetrics(data metricsMap) {
 	for k, v := range data {
+
 		value := fmt.Sprint(v)
-		types := fmt.Sprintf("%T", v)
-		endpoint = "http://172.0.0.1:8080/update/" + types + "/" + k + "/" + value + "/"
+		types := strings.TrimPrefix(fmt.Sprintf("%T", v), "main.")
+
+		endpoint = "http://127.0.0.1:8080/update/" + types + "/" + k + "/" + value + "/"
 		fmt.Println(endpoint)
 		_, err := http.Post(endpoint, "text/plain", nil)
 		if err != nil {
