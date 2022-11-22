@@ -64,6 +64,18 @@ func collectMetrics(metricList metricsMap) metricsMap {
 	return metricList
 }
 
+func sendMetrics(data metricsMap) {
+	for k, v := range data {
+		value := fmt.Sprint(v)
+		types := fmt.Sprintf("%T", v)
+		endpoint = "http://172.0.0.1:8080/update/" + types + "/" + k + "/" + value + "/"
+		fmt.Println(endpoint)
+		_, err := http.Post(endpoint, "text/plain", nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+}
 func main() {
 	Metrics := metricsMap{
 		"Alloc":         g,
@@ -97,20 +109,21 @@ func main() {
 		"RandomValue":   g,
 	}
 
-	for range tickerpoll.C {
+	/**for range tickerpoll.C {
 		c += 1
 		collectMetrics(Metrics)
 	}
 
 	for range tickerreport.C {
-		for k, v := range Metrics {
-			value := fmt.Sprint(v)
-			types := fmt.Sprintf("%T", v)
-			endpoint = "http://172.0.0.1:8080/update/" + types + "/" + k + "/" + value + "/"
-			_, err := http.Post(endpoint, "text/plain", nil)
-			if err != nil {
-				log.Fatal(err)
-			}
+		sendMetrics(Metrics)
+	}**/
+	for {
+		select {
+		case <-tickerpoll.C:
+			collectMetrics(Metrics)
+			c += 1
+		case <-tickerreport.C:
+			sendMetrics(Metrics)
 		}
 	}
 }
