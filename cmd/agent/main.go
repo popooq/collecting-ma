@@ -22,12 +22,12 @@ const (
 )
 
 var (
-	g            gauge
-	c            counter
-	m            runtime.MemStats
-	tickerpoll   = time.NewTicker(pollInterval)
-	tickerreport = time.NewTicker(reportInterval)
-	endpoint     string
+	g             gauge
+	c             counter
+	m             runtime.MemStats
+	listOfMetrics metricsMap
+	tickerpoll    = time.NewTicker(pollInterval)
+	tickerreport  = time.NewTicker(reportInterval)
 )
 
 func collectMetrics(metricList metricsMap) metricsMap {
@@ -71,12 +71,12 @@ func sendMetrics(data metricsMap) {
 		value := fmt.Sprint(v)
 		types := strings.TrimPrefix(fmt.Sprintf("%T", v), "main.")
 
-		endpoint = "http://127.0.0.1:8080/update/" + types + "/" + k + "/" + value + "/"
-		fmt.Println(endpoint)
-		_, err := http.Post(endpoint, "text/plain", nil)
+		endpoint := "http://172.0.0.1:8080/update/" + types + "/" + k + "/" + value + "/"
+		resp, err := http.Post(endpoint, "text/plain", nil)
 		if err != nil {
 			log.Fatal(err)
 		}
+		defer resp.Body.Close()
 	}
 }
 func main() {
@@ -115,10 +115,10 @@ func main() {
 	for {
 		select {
 		case <-tickerpoll.C:
-			collectMetrics(Metrics)
+			listOfMetrics = collectMetrics(Metrics)
 			c += 1
 		case <-tickerreport.C:
-			sendMetrics(Metrics)
+			sendMetrics(listOfMetrics)
 		}
 	}
 }
