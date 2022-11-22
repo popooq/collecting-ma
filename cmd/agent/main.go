@@ -109,14 +109,6 @@ func main() {
 		"RandomValue":   g,
 	}
 
-	/**for range tickerpoll.C {
-		c += 1
-		collectMetrics(Metrics)
-	}
-
-	for range tickerreport.C {
-		sendMetrics(Metrics)
-	}**/
 	for {
 		select {
 		case <-tickerpoll.C:
