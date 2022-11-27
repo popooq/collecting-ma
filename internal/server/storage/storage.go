@@ -23,7 +23,13 @@ func (ms *MemStorage) InsertMetric(name string, value any) {
 }
 
 func (ms *MemStorage) CountCounterMetric(name string, value any) {
-	ms.metrics[name] = value.(uint64) + ms.metrics[name].(uint64)
+	val, ok := value.(uint64)
+	if ok {
+		mapval, ok := ms.metrics[name].(uint64)
+		if ok {
+			ms.metrics[name] = val + mapval
+		}
+	}
 }
 
 func (ms *MemStorage) GetMetric(name string) (any, error) {

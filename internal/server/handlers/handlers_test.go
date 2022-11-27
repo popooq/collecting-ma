@@ -17,7 +17,7 @@ func TestMetricStorageServeHTTP(t *testing.T) {
 	}{
 		{
 			name: "Positive test: Gauge",
-			url:  "/update/gauge/Alloc/111",
+			url:  "/update/gauge/Alloc/12",
 			code: 200,
 		},
 		{
