@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/popooq/collectimg-ma/internal/server/storage"
 	"github.com/popooq/collectimg-ma/internal/server/trimmer"
 )
@@ -61,19 +60,19 @@ func (ms metricStorage) AllMetrics(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ms metricStorage) MetricValue(w http.ResponseWriter, r *http.Request) {
-	mType := chi.URLParam(r, "mType")
-	mName := chi.URLParam(r, "mName")
-	fmt.Print(mType)
+	url := r.URL.Path
+
+	fields := trimmer.Trimmer(url)
 	var mValue string
 
 	switch {
-	case mType == "gauge" || mType == "counter":
-		value, err := ms.storage.GetMetric(mName)
+	case fields[1] == "gauge" || fields[1] == "counter":
+		value, err := ms.storage.GetMetric(fields[2])
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
-		mValue = fmt.Sprintf("%d", value)
+		mValue = fmt.Sprintf("%s", value)
 	default:
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
