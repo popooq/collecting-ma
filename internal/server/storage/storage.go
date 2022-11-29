@@ -6,6 +6,7 @@ type MemeS interface {
 	InsertMetric(name string, value any)
 	CountCounterMetric(name string, value any)
 	GetMetric(name string) (any, error)
+	GetAllMetrics() []string
 }
 
 type MemStorage struct {
@@ -40,4 +41,13 @@ func (ms *MemStorage) GetMetric(name string) (any, error) {
 		err := fmt.Errorf("metric %s doesn't exist", name)
 		return nil, err
 	}
+}
+
+func (ms *MemStorage) GetAllMetrics() []string {
+	allMetrics := []string{}
+	for k, v := range ms.metrics {
+		metric := fmt.Sprintf("%s - %d", k, v)
+		allMetrics = append(allMetrics, metric)
+	}
+	return allMetrics
 }
