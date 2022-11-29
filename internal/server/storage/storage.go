@@ -54,7 +54,7 @@ func (ms *MemStorage) GetMetricCounter(name string) (any, error) {
 func (ms *MemStorage) GetAllMetrics() []string {
 	allMetrics := []string{}
 	for k, v := range ms.metricsGauge {
-		metric := fmt.Sprintf("%s - %f", k, v)
+		metric := fmt.Sprintf("%s - %.3f", k, v)
 		allMetrics = append(allMetrics, metric)
 	}
 	for k, v := range ms.metricsCounter {

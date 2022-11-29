@@ -9,8 +9,6 @@ import (
 	"github.com/popooq/collectimg-ma/internal/server/trimmer"
 )
 
-var form = "%.3f"
-
 type metricStorage struct {
 	storage storage.MemeS
 }
@@ -52,7 +50,7 @@ func (ms metricStorage) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (ms metricStorage) AllMetrics(w http.ResponseWriter, r *http.Request) {
 
 	allMetrics := ms.storage.GetAllMetrics()
-	Form := fmt.Sprintf(form, allMetrics)
+	Form := fmt.Sprintf("%s", allMetrics)
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
@@ -72,7 +70,7 @@ func (ms metricStorage) MetricValue(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
-		mValue = fmt.Sprintf("%f", value)
+		mValue = fmt.Sprintf("%.3f", value)
 	case fields[1] == "counter":
 		value, err := ms.storage.GetMetricCounter(fields[2])
 		if err != nil {
