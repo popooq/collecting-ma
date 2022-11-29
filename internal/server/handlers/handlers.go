@@ -9,7 +9,7 @@ import (
 	"github.com/popooq/collectimg-ma/internal/server/trimmer"
 )
 
-var form = "%s"
+var form = "%.3f"
 
 type metricStorage struct {
 	storage storage.MemeS
