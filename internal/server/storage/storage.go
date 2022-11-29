@@ -46,7 +46,7 @@ func (ms *MemStorage) GetMetric(name string) (any, error) {
 func (ms *MemStorage) GetAllMetrics() []string {
 	allMetrics := []string{}
 	for k, v := range ms.metrics {
-		metric := fmt.Sprintf("%s - %d", k, v)
+		metric := fmt.Sprintf("%s - %f", k, v)
 		allMetrics = append(allMetrics, metric)
 	}
 	return allMetrics

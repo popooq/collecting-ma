@@ -10,14 +10,7 @@ import (
 	"github.com/popooq/collectimg-ma/internal/server/trimmer"
 )
 
-var form = `<html>
-    <head>
-    <title></title>
-    </head>
-    <body>
-	%s
-    </body>
-</html>`
+var form = "%s"
 
 type metricStorage struct {
 	storage storage.MemeS
