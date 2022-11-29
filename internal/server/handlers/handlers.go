@@ -66,13 +66,20 @@ func (ms metricStorage) MetricValue(w http.ResponseWriter, r *http.Request) {
 	var mValue string
 
 	switch {
-	case fields[1] == "gauge" || fields[1] == "counter":
-		value, err := ms.storage.GetMetric(fields[2])
+	case fields[1] == "gauge":
+		value, err := ms.storage.GetMetricGauge(fields[2])
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
-		mValue = fmt.Sprintf("%s", value)
+		mValue = fmt.Sprintf("%f", value)
+	case fields[1] == "counter":
+		value, err := ms.storage.GetMetricCounter(fields[2])
+		if err != nil {
+			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
+			return
+		}
+		mValue = fmt.Sprintf("%d", value)
 	default:
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
