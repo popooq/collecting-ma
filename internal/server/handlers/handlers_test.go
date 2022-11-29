@@ -25,7 +25,7 @@ func NewRouter() chi.Router {
 	r.Use(middleware.Recoverer)
 
 	r.Route("/", func(r chi.Router) {
-		r.Post("/update/{mType}/{mName}/{mValue}/", func(w http.ResponseWriter, r *http.Request) {
+		r.Post("/update/{mType}/{mName}/{mValue}", func(w http.ResponseWriter, r *http.Request) {
 			handler.ServeHTTP(w, r)
 		})
 		r.Get("/value/{mType}/{mName}", func(w http.ResponseWriter, r *http.Request) {
@@ -43,27 +43,27 @@ func TestRouter(t *testing.T) {
 	ts := httptest.NewServer(r)
 	defer ts.Client()
 
-	statusCode, body := testRequest(t, ts, "POST", "/update/gauge/name/123/")
+	statusCode, body := testRequest(t, ts, "POST", "/update/gauge/name/123")
 	assert.Equal(t, http.StatusOK, statusCode)
 	assert.Equal(t, "", body)
 
-	statusCode, body = testRequest(t, ts, "POST", "/update/counter/name/123/")
+	statusCode, body = testRequest(t, ts, "POST", "/update/counter/name/123")
 	assert.Equal(t, http.StatusOK, statusCode)
 	assert.Equal(t, "", body)
 
-	statusCode, _ = testRequest(t, ts, "POST", "/update/gauge/name/asdf/")
+	statusCode, _ = testRequest(t, ts, "POST", "/update/gauge/name/asdf")
 	assert.Equal(t, http.StatusBadRequest, statusCode)
 
-	statusCode, _ = testRequest(t, ts, "POST", "/update/counter/name/dasd/")
+	statusCode, _ = testRequest(t, ts, "POST", "/update/counter/name/dasd")
 	assert.Equal(t, http.StatusBadRequest, statusCode)
 
-	statusCode, _ = testRequest(t, ts, "POST", "/update/sdfa/name/12/")
+	statusCode, _ = testRequest(t, ts, "POST", "/update/sdfa/name/12")
 	assert.Equal(t, http.StatusNotImplemented, statusCode)
 
 	statusCode, _ = testRequest(t, ts, "GET", "/")
 	assert.Equal(t, http.StatusOK, statusCode)
 
-	statusCode, _ = testRequest(t, ts, "GET", "/value/gauge/name")
+	statusCode, _ = testRequest(t, ts, "GET", "/value/guage/name")
 	assert.Equal(t, http.StatusNotImplemented, statusCode)
 
 }
