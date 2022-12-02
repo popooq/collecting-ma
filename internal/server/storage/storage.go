@@ -10,29 +10,29 @@ type MemeS interface {
 	GetMetricCounter(name string) (any, error)
 }
 
-type MemStorage struct {
+type memStorage struct {
 	metricsGauge   map[string]float64
 	metricsCounter map[string]uint64
 }
 
-func NewMemStorage() *MemStorage {
-	var ms MemStorage
+func NewMemStorage() *memStorage {
+	var ms memStorage
 	ms.metricsGauge = make(map[string]float64)
 	ms.metricsCounter = make(map[string]uint64)
 	return &ms
 }
 
-func (ms *MemStorage) InsertMetric(name string, value float64) {
+func (ms *memStorage) InsertMetric(name string, value float64) {
 	ms.metricsGauge[name] = value
 }
 
-func (ms *MemStorage) CountCounterMetric(name string, value uint64) {
+func (ms *memStorage) CountCounterMetric(name string, value uint64) {
 
 	ms.metricsCounter[name] += value
 
 }
 
-func (ms *MemStorage) GetMetricGauge(name string) (any, error) {
+func (ms *memStorage) GetMetricGauge(name string) (any, error) {
 	value, ok := ms.metricsGauge[name]
 	if ok {
 		return value, nil
@@ -42,7 +42,7 @@ func (ms *MemStorage) GetMetricGauge(name string) (any, error) {
 	}
 }
 
-func (ms *MemStorage) GetMetricCounter(name string) (any, error) {
+func (ms *memStorage) GetMetricCounter(name string) (any, error) {
 	value, ok := ms.metricsCounter[name]
 	if ok {
 		return value, nil
@@ -51,7 +51,7 @@ func (ms *MemStorage) GetMetricCounter(name string) (any, error) {
 		return nil, err
 	}
 }
-func (ms *MemStorage) GetAllMetrics() []string {
+func (ms *memStorage) GetAllMetrics() []string {
 	allMetrics := []string{}
 	for k, v := range ms.metricsGauge {
 		metric := fmt.Sprintf("%s - %.3f", k, v)

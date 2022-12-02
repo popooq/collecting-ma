@@ -80,7 +80,7 @@ func sendMetrics(data metricsMap) {
 	}
 }
 func main() {
-	Metrics := metricsMap{
+	metrics := metricsMap{
 		"Alloc":         g,
 		"BuckHashSys":   g,
 		"Frees":         g,
@@ -115,7 +115,7 @@ func main() {
 	for {
 		select {
 		case <-tickerpoll.C:
-			listOfMetrics = collectMetrics(Metrics)
+			listOfMetrics = collectMetrics(metrics)
 			c += 1
 		case <-tickerreport.C:
 			sendMetrics(listOfMetrics)

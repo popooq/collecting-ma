@@ -11,7 +11,7 @@ import (
 
 func NewRouter() chi.Router {
 	memS := storage.NewMemStorage()
-	handler := handlers.NewmetricStorage(memS)
+	handler := handlers.NewMetricStorage(memS)
 
 	r := chi.NewRouter()
 

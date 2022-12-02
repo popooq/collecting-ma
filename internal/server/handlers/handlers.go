@@ -13,7 +13,7 @@ type metricStorage struct {
 	storage storage.MemeS
 }
 
-func NewmetricStorage(s storage.MemeS) metricStorage {
+func NewMetricStorage(s storage.MemeS) metricStorage {
 	return metricStorage{storage: s}
 }
 
