@@ -1,21 +1,22 @@
 package handlers
 
 import (
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/popooq/collectimg-ma/internal/server/storage"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
+	"github.com/go-chi/chi/v5"
+	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
 func NewRouter() chi.Router {
-	memS := storage.NewMemStorage()
-	handler := NewMetricStorage(memS)
+
+	MemS := storage.NewMemStorage()
+	handler := NewMetricStorage(MemS)
+
+	MemS.InsertMetric("Alloc", 123.000)
+	MemS.CountCounterMetric("PollCount", 34)
 
 	r := chi.NewRouter()
 
@@ -38,46 +39,135 @@ func NewRouter() chi.Router {
 	return r
 }
 
-func TestRouter(t *testing.T) {
-	r := NewRouter()
-	ts := httptest.NewServer(r)
-	defer ts.Client()
+func TestMetricStorageServeHTTP(t *testing.T) {
 
-	statusCode, body := testRequest(t, ts, "POST", "/update/gauge/name/123")
-	assert.Equal(t, http.StatusOK, statusCode)
-	assert.Equal(t, "", body)
+	tests := []struct {
+		name string
+		url  string
+		code int
+	}{
+		{
+			name: "Positive test: Gauge",
+			url:  "/update/gauge/Alloc/12",
+			code: 200,
+		},
+		{
+			name: "Positive test: Counter",
+			url:  "/update/counter/PollCount/111",
+			code: 200,
+		},
+		{
+			name: "Negative test: Gauge",
+			url:  "/update/gauge/Alloc/abc",
+			code: 400,
+		},
+		{
+			name: "Negative test: Counter",
+			url:  "/update/counter/PollCount/avs",
+			code: 400,
+		},
+		{
+			name: "Negative test: Unkonwn metric",
+			url:  "/update/unknown/poop/111",
+			code: 501,
+		},
+		{
+			name: "Negative test: Empty value",
+			url:  "/update/counter/Name1",
+			code: 404,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodPost, tt.url, nil)
+			w := httptest.NewRecorder()
 
-	statusCode, body = testRequest(t, ts, "POST", "/update/counter/name/123")
-	assert.Equal(t, http.StatusOK, statusCode)
-	assert.Equal(t, "", body)
-
-	statusCode, _ = testRequest(t, ts, "POST", "/update/gauge/name/asdf")
-	assert.Equal(t, http.StatusBadRequest, statusCode)
-
-	statusCode, _ = testRequest(t, ts, "POST", "/update/counter/name/dasd")
-	assert.Equal(t, http.StatusBadRequest, statusCode)
-
-	statusCode, _ = testRequest(t, ts, "POST", "/update/sdfa/name/12")
-	assert.Equal(t, http.StatusNotImplemented, statusCode)
-
-	statusCode, _ = testRequest(t, ts, "GET", "/")
-	assert.Equal(t, http.StatusOK, statusCode)
-
-	statusCode, _ = testRequest(t, ts, "GET", "/value/guage/name")
-	assert.Equal(t, http.StatusNotImplemented, statusCode)
-
+			h := NewRouter()
+			h.ServeHTTP(w, r)
+			result := w.Result()
+			if result.StatusCode != tt.code {
+				t.Errorf("Expected code %d, got %d", tt.code, result.StatusCode)
+			}
+			defer result.Body.Close()
+		})
+	}
 }
 
-func testRequest(t *testing.T, ts *httptest.Server, method, path string) (int, string) {
-	req, err := http.NewRequest(method, ts.URL+path, nil)
-	require.NoError(t, err)
+func TestMetricStorageAllMetrics(t *testing.T) {
 
-	resp, err := http.DefaultClient.Do(req)
-	require.NoError(t, err)
+	tests := []struct {
+		name string
+		url  string
+		code int
+	}{
+		{
+			name: "Positive test",
+			url:  "/",
+			code: 200,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, tt.url, nil)
+			w := httptest.NewRecorder()
 
-	respBody, err := io.ReadAll(resp.Body)
-	require.NoError(t, err)
+			h := NewRouter()
+			h.ServeHTTP(w, r)
+			result := w.Result()
+			if result.StatusCode != tt.code {
+				t.Errorf("Expected code %d, got %d", tt.code, result.StatusCode)
+			}
+			defer result.Body.Close()
+		})
+	}
+}
 
-	defer resp.Body.Close()
-	return resp.StatusCode, string(respBody)
+func TestMetricStorageMetricValue(t *testing.T) {
+
+	tests := []struct {
+		name string
+		url  string
+		code int
+	}{
+		{
+			name: "Positive test Gauge",
+			url:  "/value/gauge/Alloc",
+			code: 200,
+		},
+		{
+			name: "Positive test Counter",
+			url:  "/value/counter/PollCount",
+			code: 200,
+		},
+		{
+			name: "Negative test Gauge",
+			url:  "/value/gauge/Allo",
+			code: 404,
+		},
+		{
+			name: "Negative test Counter",
+			url:  "/value/counter/PollCoun",
+			code: 404,
+		},
+		{
+			name: "Negative test Unknown type",
+			url:  "/value/gg/Alloc",
+			code: 501,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, tt.url, nil)
+			w := httptest.NewRecorder()
+
+			h := NewRouter()
+			h.ServeHTTP(w, r)
+			result := w.Result()
+			if result.StatusCode != tt.code {
+				t.Errorf("Expected code %d, got %d", tt.code, result.StatusCode)
+			}
+			defer result.Body.Close()
+		})
+	}
 }

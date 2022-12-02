@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/popooq/collectimg-ma/internal/server/storage"
-	"github.com/popooq/collectimg-ma/internal/server/trimmer"
+	"github.com/go-chi/chi/v5"
+	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
 type metricStorage struct {
@@ -18,25 +18,26 @@ func NewMetricStorage(s storage.MemeS) metricStorage {
 }
 
 func (ms metricStorage) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	url := r.URL.Path
 
-	fields := trimmer.Trimmer(url)
+	mTypeParam := chi.URLParam(r, "mType")
+	mNameParam := chi.URLParam(r, "mName")
+	mValueParam := chi.URLParam(r, "mValue")
 
 	switch {
-	case fields[1] == "gauge":
-		value, err := strconv.ParseFloat(fields[3], 64)
+	case mTypeParam == "gauge":
+		value, err := strconv.ParseFloat(mValueParam, 64)
 		if err != nil {
 			http.Error(w, "There is no value", http.StatusBadRequest)
 			return
 		}
-		ms.storage.InsertMetric(fields[2], value)
-	case fields[1] == "counter":
-		value, err := strconv.Atoi(fields[3])
+		ms.storage.InsertMetric(mNameParam, value)
+	case mTypeParam == "counter":
+		value, err := strconv.Atoi(mValueParam)
 		if err != nil {
 			http.Error(w, "There is no value", http.StatusBadRequest)
 			return
 		}
-		ms.storage.CountCounterMetric(fields[2], uint64(value))
+		ms.storage.CountCounterMetric(mNameParam, uint64(value))
 	default:
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
@@ -58,21 +59,22 @@ func (ms metricStorage) AllMetrics(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ms metricStorage) MetricValue(w http.ResponseWriter, r *http.Request) {
-	url := r.URL.Path
 
-	fields := trimmer.Trimmer(url)
 	var mValue string
 
+	mTypeParam := chi.URLParam(r, "mType")
+	mNameParam := chi.URLParam(r, "mName")
+
 	switch {
-	case fields[1] == "gauge":
-		value, err := ms.storage.GetMetricGauge(fields[2])
+	case mTypeParam == "gauge":
+		value, err := ms.storage.GetMetricGauge(mNameParam)
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
 		mValue = fmt.Sprintf("%.3f", value)
-	case fields[1] == "counter":
-		value, err := ms.storage.GetMetricCounter(fields[2])
+	case mTypeParam == "counter":
+		value, err := ms.storage.GetMetricCounter(mNameParam)
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
