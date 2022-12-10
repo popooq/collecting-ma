@@ -21,11 +21,17 @@ func NewRouter() chi.Router {
 	r.Use(middleware.Recoverer)
 
 	r.Route("/", func(r chi.Router) {
+		r.Post("/update/{mType}/{mName}/{mValue}", func(w http.ResponseWriter, r *http.Request) {
+			handler.CollectMetrics(w, r)
+		})
+		r.Get("/value/{mType}/{mName}", func(w http.ResponseWriter, r *http.Request) {
+			handler.MetricValue(w, r)
+		})
 		r.Post("/update", func(w http.ResponseWriter, r *http.Request) {
-			handler.CollectMetric(w, r)
+			handler.CollectJsonMetric(w, r)
 		})
 		r.Post("/value", func(w http.ResponseWriter, r *http.Request) {
-			handler.MetricValue(w, r)
+			handler.MetricJsonValue(w, r)
 		})
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			handler.AllMetrics(w, r)

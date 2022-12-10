@@ -1,11 +1,12 @@
 package sender
 
 import (
-	"bytes"
-	"encoding/json"
+	//"bytes"
+	//"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
+
+	//"strconv"
 	"strings"
 
 	"github.com/popooq/collectimg-ma/internal/agent/utils/collector"
@@ -20,6 +21,18 @@ type Metrics struct {
 
 func SendMetrics(data collector.MetricsMap) {
 	for k, v := range data {
+
+		value := fmt.Sprint(v)
+		types := strings.TrimPrefix(fmt.Sprintf("%T", v), "collector.")
+
+		endpoint := "http://127.0.0.1:8080/update/" + types + "/" + k + "/" + value
+		resp, err := http.Post(endpoint, "text/plain", nil)
+		if err != nil {
+			fmt.Println("Server unreachible")
+		}
+		defer resp.Body.Close()
+	}
+	/** for k, v := range data {
 
 		m := newMetric(k, v)
 
@@ -37,10 +50,10 @@ func SendMetrics(data collector.MetricsMap) {
 		}
 
 		defer resp.Body.Close()
-	}
+	} **/
 }
 
-func newMetric(k string, v any) *Metrics {
+/**func newMetric(k string, v any) *Metrics {
 	value := fmt.Sprint(v)
 	types := strings.TrimPrefix(fmt.Sprintf("%T", v), "collector.")
 
@@ -64,4 +77,4 @@ func newMetric(k string, v any) *Metrics {
 		m.Delta = &counterValue
 	}
 	return &m
-}
+}**/
