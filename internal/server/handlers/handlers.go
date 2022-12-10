@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
@@ -32,7 +32,6 @@ func (ms metricStorage) CollectMetrics(w http.ResponseWriter, r *http.Request) {
 	mTypeParam := chi.URLParam(r, "mType")
 	mNameParam := chi.URLParam(r, "mName")
 	mValueParam := chi.URLParam(r, "mValue")
-
 	switch {
 	case mTypeParam == "gauge":
 		value, err := strconv.ParseFloat(mValueParam, 64)
@@ -91,11 +90,6 @@ func (ms metricStorage) MetricValue(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ms metricStorage) CollectJsonMetric(w http.ResponseWriter, r *http.Request) {
-
-	/**
-		mNameParam := chi.URLParam(r, "mName")
-		mValueParam := chi.URLParam(r, "mValue")
-	**/
 
 	var m Metrics
 
