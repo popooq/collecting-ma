@@ -1,51 +1,61 @@
 package handlers
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
-type metricStorage struct {
-	storage storage.MemeS
-}
+type (
+	Metrics struct {
+		ID    string   `json:"id"`              // имя метрики
+		MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
+		Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
+		Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
+	}
+	metricStorage struct {
+		storage storage.MemeS
+	}
+)
 
 func NewMetricStorage(s storage.MemeS) metricStorage {
 	return metricStorage{storage: s}
 }
 
-func (ms metricStorage) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (ms metricStorage) CollectMetric(w http.ResponseWriter, r *http.Request) {
 
-	mTypeParam := chi.URLParam(r, "mType")
-	mNameParam := chi.URLParam(r, "mName")
-	mValueParam := chi.URLParam(r, "mValue")
+	/**
+		mNameParam := chi.URLParam(r, "mName")
+		mValueParam := chi.URLParam(r, "mValue")
+	**/
+
+	var m Metrics
+
+	dec := json.NewDecoder(r.Body)
+	err := dec.Decode(&m)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	switch {
-	case mTypeParam == "gauge":
-		value, err := strconv.ParseFloat(mValueParam, 64)
-		if err != nil {
-			http.Error(w, "There is no value", http.StatusBadRequest)
-			return
-		}
-		ms.storage.InsertMetric(mNameParam, value)
-	case mTypeParam == "counter":
-		value, err := strconv.Atoi(mValueParam)
-		if err != nil {
-			http.Error(w, "There is no value", http.StatusBadRequest)
-			return
-		}
-		ms.storage.CountCounterMetric(mNameParam, uint64(value))
+	case m.MType == "gauge":
+		ms.storage.InsertMetric(m.ID, *m.Value)
+	case m.MType == "counter":
+		ms.storage.CountCounterMetric(m.ID, uint64(*m.Delta))
 	default:
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
-
-	w.Header().Set("Content-Type", "text/plain")
+	buf := bytes.NewBuffer([]byte{})
+	encoder := json.NewEncoder(buf)
+	encoder.Encode(m)
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(nil)
+	w.Write(buf.Bytes())
 }
 
 func (ms metricStorage) AllMetrics(w http.ResponseWriter, r *http.Request) {
@@ -60,32 +70,41 @@ func (ms metricStorage) AllMetrics(w http.ResponseWriter, r *http.Request) {
 
 func (ms metricStorage) MetricValue(w http.ResponseWriter, r *http.Request) {
 
-	var mValue string
+	var m Metrics
 
-	mTypeParam := chi.URLParam(r, "mType")
-	mNameParam := chi.URLParam(r, "mName")
+	dec := json.NewDecoder(r.Body)
+	err := dec.Decode(&m)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	switch {
-	case mTypeParam == "gauge":
-		value, err := ms.storage.GetMetricGauge(mNameParam)
+	case m.MType == "gauge":
+		gaugeValue, err := ms.storage.GetMetricGauge(m.ID)
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
-		mValue = fmt.Sprintf("%.3f", value)
-	case mTypeParam == "counter":
-		value, err := ms.storage.GetMetricCounter(mNameParam)
+		m.Value = &gaugeValue
+	case m.MType == "counter":
+		value, err := ms.storage.GetMetricCounter(m.ID)
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
-		mValue = fmt.Sprintf("%d", value)
+		counterVal := int64(value)
+		m.Delta = &counterVal
 	default:
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/plain")
+	buf := bytes.NewBuffer([]byte{})
+	encoder := json.NewEncoder(buf)
+	encoder.Encode(m)
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(mValue))
+	w.Write(buf.Bytes())
 }

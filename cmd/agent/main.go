@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/popooq/collectimg-ma/internal/agent/utils/collector"
@@ -58,8 +59,9 @@ func main() {
 	for {
 		select {
 		case <-tickerpoll.C:
-			collector.CollectMetrics(metrics)
+			collector.CollectMetrics(metrics, uint64(c))
 			c++
+			fmt.Println(metrics["PollCount"], c)
 		case <-tickerreport.C:
 			sender.SendMetrics(metrics)
 		}

@@ -9,9 +9,9 @@ type (
 	MemeS interface {
 		InsertMetric(name string, value float64)
 		CountCounterMetric(name string, value uint64)
-		GetMetricGauge(name string) (any, error)
+		GetMetricGauge(name string) (float64, error)
 		GetAllMetrics() []string
-		GetMetricCounter(name string) (any, error)
+		GetMetricCounter(name string) (uint64, error)
 	}
 
 	memStorage struct {
@@ -41,7 +41,7 @@ func (ms *memStorage) CountCounterMetric(name string, value uint64) {
 	ms.mu.Unlock()
 }
 
-func (ms *memStorage) GetMetricGauge(name string) (any, error) {
+func (ms *memStorage) GetMetricGauge(name string) (float64, error) {
 	ms.mu.Lock()
 	value, ok := ms.metricsGauge[name]
 	ms.mu.Unlock()
@@ -49,11 +49,11 @@ func (ms *memStorage) GetMetricGauge(name string) (any, error) {
 		return value, nil
 	} else {
 		err := fmt.Errorf("metric %s doesn't exist", name)
-		return nil, err
+		return 0, err
 	}
 }
 
-func (ms *memStorage) GetMetricCounter(name string) (any, error) {
+func (ms *memStorage) GetMetricCounter(name string) (uint64, error) {
 	ms.mu.Lock()
 	value, ok := ms.metricsCounter[name]
 	ms.mu.Unlock()
@@ -61,7 +61,7 @@ func (ms *memStorage) GetMetricCounter(name string) (any, error) {
 		return value, nil
 	} else {
 		err := fmt.Errorf("metric %s doesn't exist", name)
-		return nil, err
+		return 0, err
 	}
 }
 func (ms *memStorage) GetAllMetrics() []string {

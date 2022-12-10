@@ -11,9 +11,9 @@ type (
 	MetricsMap map[string]any
 )
 
-func CollectMetrics(metricList MetricsMap) {
+func CollectMetrics(metricList MetricsMap, count uint64) {
 	var (
-		c counter
+		c counter = counter(count)
 		m runtime.MemStats
 	)
 
