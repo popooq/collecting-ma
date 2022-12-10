@@ -89,7 +89,7 @@ func (ms metricStorage) MetricValue(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(mValue))
 }
 
-func (ms metricStorage) CollectJsonMetric(w http.ResponseWriter, r *http.Request) {
+func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request) {
 
 	var m Metrics
 
@@ -127,7 +127,7 @@ func (ms metricStorage) AllMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(Form))
 }
 
-func (ms metricStorage) MetricJsonValue(w http.ResponseWriter, r *http.Request) {
+func (ms metricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) {
 
 	var m Metrics
 
