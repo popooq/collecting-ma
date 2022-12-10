@@ -13,9 +13,10 @@ type (
 
 func CollectMetrics(metricList MetricsMap, count uint64) {
 	var (
-		c counter = counter(count)
+		c counter
 		m runtime.MemStats
 	)
+	c = counter(count)
 
 	runtime.ReadMemStats(&m)
 

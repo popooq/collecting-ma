@@ -27,7 +27,7 @@ func NewRouter() chi.Router {
 
 	r.Route("/", func(r chi.Router) {
 		r.Post("/update/{mType}/{mName}/{mValue}", func(w http.ResponseWriter, r *http.Request) {
-			handler.CollectMetric(w, r)
+			handler.CollectMetrics(w, r)
 		})
 		r.Get("/value/{mType}/{mName}", func(w http.ResponseWriter, r *http.Request) {
 			handler.MetricValue(w, r)
