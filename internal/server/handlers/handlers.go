@@ -103,8 +103,21 @@ func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 	switch {
 	case m.MType == "gauge":
 		ms.storage.InsertMetric(m.ID, *m.Value)
+		newValue, err := ms.storage.GetMetricGauge(m.ID)
+		if err != nil {
+			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
+			return
+		}
+		m.Value = &newValue
 	case m.MType == "counter":
 		ms.storage.CountCounterMetric(m.ID, uint64(*m.Delta))
+		newValue, err := ms.storage.GetMetricCounter(m.ID)
+		if err != nil {
+			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
+			return
+		}
+		newDelta := int64(newValue)
+		m.Delta = &newDelta
 	default:
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
