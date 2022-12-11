@@ -27,10 +27,10 @@ func NewRouter() chi.Router {
 		r.Get("/value/{mType}/{mName}", func(w http.ResponseWriter, r *http.Request) {
 			handler.MetricValue(w, r)
 		})
-		r.Post("/update", func(w http.ResponseWriter, r *http.Request) {
+		r.Post("/update/", func(w http.ResponseWriter, r *http.Request) {
 			handler.CollectJSONMetric(w, r)
 		})
-		r.Post("/value", func(w http.ResponseWriter, r *http.Request) {
+		r.Post("/value/", func(w http.ResponseWriter, r *http.Request) {
 			handler.MetricJSONValue(w, r)
 		})
 		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
