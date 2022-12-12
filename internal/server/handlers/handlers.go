@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -122,12 +121,13 @@ func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
-	buf := bytes.NewBuffer([]byte{})
-	encoder := json.NewEncoder(buf)
-	encoder.Encode(m)
+	//buf := bytes.NewBuffer([]byte{})
+	//encoder := json.NewEncoder(buf)
+	//encoder.Encode(m)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(buf.Bytes())
+	//w.Write(buf.Bytes())
+	json.NewEncoder(w).Encode(m)
 }
 
 func (ms metricStorage) AllMetrics(w http.ResponseWriter, r *http.Request) {
@@ -172,11 +172,12 @@ func (ms metricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	buf := bytes.NewBuffer([]byte{})
-	encoder := json.NewEncoder(buf)
-	encoder.Encode(m)
+	//buf := bytes.NewBuffer([]byte{})
+	//encoder := json.NewEncoder(buf)
+	//encoder.Encode(m)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write(buf.Bytes())
+	//w.Write(buf.Bytes())
+	json.NewEncoder(w).Encode(m)
 }
