@@ -88,9 +88,19 @@ func (ms metricStorage) MetricValue(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(mValue))
 }
 
+func (ms metricStorage) AllMetrics(w http.ResponseWriter, r *http.Request) {
+
+	allMetrics := ms.storage.GetAllMetrics()
+	Form := fmt.Sprintf("%s", allMetrics)
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(Form))
+}
+
 func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request) {
 
-	var m Metrics
+	var m, nm Metrics
 
 	dec := json.NewDecoder(r.Body)
 	err := dec.Decode(&m)
@@ -102,42 +112,36 @@ func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 	switch {
 	case m.MType == "gauge":
 		ms.storage.InsertMetric(m.ID, *m.Value)
+	case m.MType == "counter":
+		ms.storage.CountCounterMetric(m.ID, uint64(*m.Delta))
+	default:
+		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
+		return
+	}
+	nm.ID = m.ID
+	nm.MType = m.MType
+	switch {
+	case nm.MType == "gauge":
 		newValue, err := ms.storage.GetMetricGauge(m.ID)
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
-		m.Value = &newValue
-	case m.MType == "counter":
-		ms.storage.CountCounterMetric(m.ID, uint64(*m.Delta))
+		nm.Value = &newValue
+	case nm.MType == "counter":
 		newValue, err := ms.storage.GetMetricCounter(m.ID)
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
 		newDelta := int64(newValue)
-		m.Delta = &newDelta
+		nm.Delta = &newDelta
 	default:
-		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
-		return
+		http.Error(w, "this type of metric doesn't exist", http.StatusNotImplemented)
 	}
-	//buf := bytes.NewBuffer([]byte{})
-	//encoder := json.NewEncoder(buf)
-	//encoder.Encode(m)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	//w.Write(buf.Bytes())
-	json.NewEncoder(w).Encode(m)
-}
-
-func (ms metricStorage) AllMetrics(w http.ResponseWriter, r *http.Request) {
-
-	allMetrics := ms.storage.GetAllMetrics()
-	Form := fmt.Sprintf("%s", allMetrics)
-
-	w.Header().Set("Content-Type", "text/plain")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(Form))
+	json.NewEncoder(w).Encode(nm)
 }
 
 func (ms metricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) {
