@@ -1,8 +1,10 @@
 package handlers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -19,6 +21,15 @@ type (
 	}
 	metricStorage struct {
 		storage storage.MemeS
+	}
+)
+
+var (
+	buf    bytes.Buffer
+	logger = log.New(&buf, "INFO: ", log.Lshortfile)
+
+	infof = func(info string) {
+		logger.Output(2, info)
 	}
 )
 
@@ -111,8 +122,21 @@ func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 
 	switch {
 	case m.MType == "gauge":
+		newValue, err := ms.storage.GetMetricGauge(m.ID)
+		if err != nil {
+			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
+			return
+		}
+		nm.Value = &newValue
 		ms.storage.InsertMetric(m.ID, *m.Value)
 	case m.MType == "counter":
+		newValue, err := ms.storage.GetMetricCounter(m.ID)
+		if err != nil {
+			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
+			return
+		}
+		newDelta := int64(newValue)
+		nm.Delta = &newDelta
 		ms.storage.CountCounterMetric(m.ID, uint64(*m.Delta))
 	default:
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
@@ -120,7 +144,7 @@ func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 	}
 	nm.ID = m.ID
 	nm.MType = m.MType
-	switch {
+	/**switch {
 	case nm.MType == "gauge":
 		newValue, err := ms.storage.GetMetricGauge(m.ID)
 		if err != nil {
@@ -139,6 +163,7 @@ func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 	default:
 		http.Error(w, "this type of metric doesn't exist", http.StatusNotImplemented)
 	}
+	**/
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(nm)
@@ -146,7 +171,7 @@ func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 
 func (ms metricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) {
 
-	var m Metrics
+	var m, nm Metrics
 
 	dec := json.NewDecoder(r.Body)
 	err := dec.Decode(&m)
@@ -154,34 +179,33 @@ func (ms metricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
+	nm.MType = m.MType
+	nm.ID = m.ID
 	switch {
 	case m.MType == "gauge":
 		gaugeValue, err := ms.storage.GetMetricGauge(m.ID)
 		if err != nil {
+			infof("This metric doesnt exist")
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
-		m.Value = &gaugeValue
+		nm.Value = &gaugeValue
 	case m.MType == "counter":
 		value, err := ms.storage.GetMetricCounter(m.ID)
 		if err != nil {
+			infof("This metric doesnt exist")
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
 		counterVal := int64(value)
-		m.Delta = &counterVal
+		nm.Delta = &counterVal
 	default:
+		infof("this type of metric doesnt't exist")
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
 
-	//buf := bytes.NewBuffer([]byte{})
-	//encoder := json.NewEncoder(buf)
-	//encoder.Encode(m)
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	//w.Write(buf.Bytes())
-	json.NewEncoder(w).Encode(m)
+	json.NewEncoder(w).Encode(nm)
 }
