@@ -2,25 +2,20 @@ package handlers
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/popooq/collectimg-ma/internal/utils/serializator"
 	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
 type (
-	Metrics struct {
-		ID    string   `json:"id"`              // имя метрики
-		MType string   `json:"type"`            // параметр, принимающий значение gauge или counter
-		Delta *int64   `json:"delta,omitempty"` // значение метрики в случае передачи counter
-		Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
-	}
 	metricStorage struct {
-		storage storage.MemeS
+		storage      storage.MemeS
+		serializator *serializator.Metrics
 	}
 )
 
@@ -33,8 +28,10 @@ var (
 	}
 )
 
-func NewMetricStorage(s storage.MemeS) metricStorage {
-	return metricStorage{storage: s}
+func NewMetricStorage(stor storage.MemeS, ser *serializator.Metrics) metricStorage {
+	return metricStorage{
+		storage:      stor,
+		serializator: ser}
 }
 
 func (ms metricStorage) CollectMetrics(w http.ResponseWriter, r *http.Request) {
@@ -111,101 +108,63 @@ func (ms metricStorage) AllMetrics(w http.ResponseWriter, r *http.Request) {
 
 func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request) {
 
-	var m, nm Metrics
-
-	dec := json.NewDecoder(r.Body)
-	err := dec.Decode(&m)
+	err := ms.serializator.Decode(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		log.Println("something goes wrong")
 	}
 
 	switch {
-	case m.MType == "gauge":
-		newValue, err := ms.storage.GetMetricGauge(m.ID)
-		if err != nil {
-			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
-			return
-		}
-		nm.Value = &newValue
-		ms.storage.InsertMetric(m.ID, *m.Value)
-	case m.MType == "counter":
-		newValue, err := ms.storage.GetMetricCounter(m.ID)
-		if err != nil {
-			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
-			return
-		}
-		newDelta := int64(newValue)
-		nm.Delta = &newDelta
-		ms.storage.CountCounterMetric(m.ID, uint64(*m.Delta))
+	case ms.serializator.MType == "gauge":
+		ms.storage.InsertMetric(ms.serializator.ID, *ms.serializator.Value)
+	case ms.serializator.MType == "counter":
+		ms.storage.CountCounterMetric(ms.serializator.ID, uint64(*ms.serializator.Delta))
 	default:
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
-	nm.ID = m.ID
-	nm.MType = m.MType
-	/**switch {
-	case nm.MType == "gauge":
-		newValue, err := ms.storage.GetMetricGauge(m.ID)
-		if err != nil {
-			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
-			return
-		}
-		nm.Value = &newValue
-	case nm.MType == "counter":
-		newValue, err := ms.storage.GetMetricCounter(m.ID)
-		if err != nil {
-			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
-			return
-		}
-		newDelta := int64(newValue)
-		nm.Delta = &newDelta
-	default:
-		http.Error(w, "this type of metric doesn't exist", http.StatusNotImplemented)
+	err = ms.serializator.Encode(w)
+	if err != nil {
+		log.Println("something goes wrong", err)
 	}
-	**/
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(nm)
 }
 
 func (ms metricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) {
 
-	var m, nm Metrics
-
-	dec := json.NewDecoder(r.Body)
-	err := dec.Decode(&m)
+	err := ms.serializator.Decode(r.Body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		log.Println("something goes wrong")
 	}
-	nm.MType = m.MType
-	nm.ID = m.ID
+
 	switch {
-	case m.MType == "gauge":
-		gaugeValue, err := ms.storage.GetMetricGauge(m.ID)
+	case ms.serializator.MType == "gauge":
+		gaugeValue, err := ms.storage.GetMetricGauge(ms.serializator.ID)
 		if err != nil {
 			infof("This metric doesnt exist")
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
-		nm.Value = &gaugeValue
-	case m.MType == "counter":
-		value, err := ms.storage.GetMetricCounter(m.ID)
+		ms.serializator.Value = &gaugeValue
+	case ms.serializator.MType == "counter":
+		value, err := ms.storage.GetMetricCounter(ms.serializator.ID)
 		if err != nil {
 			infof("This metric doesnt exist")
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
 		counterVal := int64(value)
-		nm.Delta = &counterVal
+		ms.serializator.Delta = &counterVal
 	default:
 		infof("this type of metric doesnt't exist")
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
 
+	err = ms.serializator.Encode(w)
+	if err != nil {
+		log.Println("simething goes wrong", err)
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(nm)
 }
