@@ -8,14 +8,14 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/popooq/collectimg-ma/internal/utils/serializator"
+	"github.com/popooq/collectimg-ma/internal/utils/coder"
 	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
 type (
 	metricStorage struct {
-		storage      storage.MemeS
-		serializator *serializator.Metrics
+		storage storage.MemeS
+		coder   *coder.Metrics
 	}
 )
 
@@ -28,10 +28,10 @@ var (
 	}
 )
 
-func NewMetricStorage(stor storage.MemeS, ser *serializator.Metrics) metricStorage {
+func NewMetricStorage(stor storage.MemeS, coder *coder.Metrics) metricStorage {
 	return metricStorage{
-		storage:      stor,
-		serializator: ser}
+		storage: stor,
+		coder:   coder}
 }
 
 func (ms metricStorage) CollectMetrics(w http.ResponseWriter, r *http.Request) {
@@ -108,21 +108,21 @@ func (ms metricStorage) AllMetrics(w http.ResponseWriter, r *http.Request) {
 
 func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request) {
 
-	err := ms.serializator.Decode(r.Body)
+	err := ms.coder.Decode(r.Body)
 	if err != nil {
 		log.Println("something goes wrong")
 	}
 
 	switch {
-	case ms.serializator.MType == "gauge":
-		ms.storage.InsertMetric(ms.serializator.ID, *ms.serializator.Value)
-	case ms.serializator.MType == "counter":
-		ms.storage.CountCounterMetric(ms.serializator.ID, uint64(*ms.serializator.Delta))
+	case ms.coder.MType == "gauge":
+		ms.storage.InsertMetric(ms.coder.ID, *ms.coder.Value)
+	case ms.coder.MType == "counter":
+		ms.storage.CountCounterMetric(ms.coder.ID, uint64(*ms.coder.Delta))
 	default:
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
-	err = ms.serializator.Encode(w)
+	err = ms.coder.Encode(w)
 	if err != nil {
 		log.Println("something goes wrong", err)
 	}
@@ -132,36 +132,36 @@ func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 
 func (ms metricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) {
 
-	err := ms.serializator.Decode(r.Body)
+	err := ms.coder.Decode(r.Body)
 	if err != nil {
 		log.Println("something goes wrong")
 	}
 
 	switch {
-	case ms.serializator.MType == "gauge":
-		gaugeValue, err := ms.storage.GetMetricGauge(ms.serializator.ID)
+	case ms.coder.MType == "gauge":
+		gaugeValue, err := ms.storage.GetMetricGauge(ms.coder.ID)
 		if err != nil {
 			infof("This metric doesnt exist")
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
-		ms.serializator.Value = &gaugeValue
-	case ms.serializator.MType == "counter":
-		value, err := ms.storage.GetMetricCounter(ms.serializator.ID)
+		ms.coder.Value = &gaugeValue
+	case ms.coder.MType == "counter":
+		value, err := ms.storage.GetMetricCounter(ms.coder.ID)
 		if err != nil {
 			infof("This metric doesnt exist")
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
 		counterVal := int64(value)
-		ms.serializator.Delta = &counterVal
+		ms.coder.Delta = &counterVal
 	default:
 		infof("this type of metric doesnt't exist")
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
 
-	err = ms.serializator.Encode(w)
+	err = ms.coder.Encode(w)
 	if err != nil {
 		log.Println("simething goes wrong", err)
 	}

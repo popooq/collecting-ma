@@ -6,47 +6,47 @@ import (
 )
 
 type (
-	gauge      float64
-	counter    uint64
+	Gauge      float64
+	Counter    uint64
 	MetricsMap map[string]any
 )
 
 func CollectMetrics(metricList MetricsMap, count uint64) {
 	var (
-		c counter
+		c Counter
 		m runtime.MemStats
 	)
-	c = counter(count)
+	c = Counter(count)
 
 	runtime.ReadMemStats(&m)
 
-	metricList["Alloc"] = gauge(m.Alloc)
-	metricList["BuckHashSys"] = gauge(m.BuckHashSys)
-	metricList["Frees"] = gauge(m.Frees)
-	metricList["GCCPUFraction"] = gauge(m.GCCPUFraction)
-	metricList["GCSys"] = gauge(m.GCSys)
-	metricList["HeapAlloc"] = gauge(m.HeapAlloc)
-	metricList["HeapIdle"] = gauge(m.HeapIdle)
-	metricList["HeapInuse"] = gauge(m.HeapInuse)
-	metricList["HeapObjects"] = gauge(m.HeapObjects)
-	metricList["HeapReleased"] = gauge(m.HeapReleased)
-	metricList["HeapSys"] = gauge(m.HeapSys)
-	metricList["LastGC"] = gauge(m.LastGC)
-	metricList["Lookups"] = gauge(m.Lookups)
-	metricList["MCacheInuse"] = gauge(m.MCacheInuse)
-	metricList["MCacheSys"] = gauge(m.MCacheSys)
-	metricList["MSpanInuse"] = gauge(m.MSpanInuse)
-	metricList["MSpanSys"] = gauge(m.MSpanSys)
-	metricList["Mallocs"] = gauge(m.Mallocs)
-	metricList["NextGC"] = gauge(m.NextGC)
-	metricList["NumForcedGC"] = gauge(m.NumForcedGC)
-	metricList["NumGC"] = gauge(m.NumGC)
-	metricList["OtherSys"] = gauge(m.OtherSys)
-	metricList["PauseTotalNs"] = gauge(m.PauseTotalNs)
-	metricList["StackInuse"] = gauge(m.StackInuse)
-	metricList["StackSys"] = gauge(m.StackSys)
-	metricList["Sys"] = gauge(m.Sys)
-	metricList["TotalAlloc"] = gauge(m.TotalAlloc)
+	metricList["Alloc"] = Gauge(m.Alloc)
+	metricList["BuckHashSys"] = Gauge(m.BuckHashSys)
+	metricList["Frees"] = Gauge(m.Frees)
+	metricList["GCCPUFraction"] = Gauge(m.GCCPUFraction)
+	metricList["GCSys"] = Gauge(m.GCSys)
+	metricList["HeapAlloc"] = Gauge(m.HeapAlloc)
+	metricList["HeapIdle"] = Gauge(m.HeapIdle)
+	metricList["HeapInuse"] = Gauge(m.HeapInuse)
+	metricList["HeapObjects"] = Gauge(m.HeapObjects)
+	metricList["HeapReleased"] = Gauge(m.HeapReleased)
+	metricList["HeapSys"] = Gauge(m.HeapSys)
+	metricList["LastGC"] = Gauge(m.LastGC)
+	metricList["Lookups"] = Gauge(m.Lookups)
+	metricList["MCacheInuse"] = Gauge(m.MCacheInuse)
+	metricList["MCacheSys"] = Gauge(m.MCacheSys)
+	metricList["MSpanInuse"] = Gauge(m.MSpanInuse)
+	metricList["MSpanSys"] = Gauge(m.MSpanSys)
+	metricList["Mallocs"] = Gauge(m.Mallocs)
+	metricList["NextGC"] = Gauge(m.NextGC)
+	metricList["NumForcedGC"] = Gauge(m.NumForcedGC)
+	metricList["NumGC"] = Gauge(m.NumGC)
+	metricList["OtherSys"] = Gauge(m.OtherSys)
+	metricList["PauseTotalNs"] = Gauge(m.PauseTotalNs)
+	metricList["StackInuse"] = Gauge(m.StackInuse)
+	metricList["StackSys"] = Gauge(m.StackSys)
+	metricList["Sys"] = Gauge(m.Sys)
+	metricList["TotalAlloc"] = Gauge(m.TotalAlloc)
 	metricList["PollCount"] = c
-	metricList["RandomValue"] = gauge(rand.Uint64())
+	metricList["RandomValue"] = Gauge(rand.Uint64())
 }
