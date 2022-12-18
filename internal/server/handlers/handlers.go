@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"net/http"
@@ -16,15 +15,6 @@ type (
 	metricStorage struct {
 		storage storage.MemeS
 		coder   *coder.Metrics
-	}
-)
-
-var (
-	buf    bytes.Buffer
-	logger = log.New(&buf, "INFO: ", log.Lshortfile)
-
-	infof = func(info string) {
-		logger.Output(2, info)
 	}
 )
 
@@ -116,8 +106,19 @@ func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 	switch {
 	case ms.coder.MType == "gauge":
 		ms.storage.InsertMetric(ms.coder.ID, *ms.coder.Value)
+		ms.coder.Value, err = ms.storage.GetMetricJSONGauge(ms.coder.ID)
+		if err != nil {
+			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
+			return
+		}
 	case ms.coder.MType == "counter":
 		ms.storage.CountCounterMetric(ms.coder.ID, uint64(*ms.coder.Delta))
+		ms.coder.Delta, err = ms.storage.GetMetricJSONCounter(ms.coder.ID)
+		if err != nil {
+
+			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
+			return
+		}
 	default:
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
@@ -141,7 +142,6 @@ func (ms metricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 	case ms.coder.MType == "gauge":
 		gaugeValue, err := ms.storage.GetMetricGauge(ms.coder.ID)
 		if err != nil {
-			infof("This metric doesnt exist")
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
@@ -149,14 +149,12 @@ func (ms metricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 	case ms.coder.MType == "counter":
 		value, err := ms.storage.GetMetricCounter(ms.coder.ID)
 		if err != nil {
-			infof("This metric doesnt exist")
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
 		counterVal := int64(value)
 		ms.coder.Delta = &counterVal
 	default:
-		infof("this type of metric doesnt't exist")
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}

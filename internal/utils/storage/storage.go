@@ -12,6 +12,8 @@ type (
 		GetMetricGauge(name string) (float64, error)
 		GetAllMetrics() []string
 		GetMetricCounter(name string) (uint64, error)
+		GetMetricJSONGauge(name string) (*float64, error)
+		GetMetricJSONCounter(name string) (*int64, error)
 	}
 
 	memStorage struct {
@@ -53,6 +55,18 @@ func (ms *memStorage) GetMetricGauge(name string) (float64, error) {
 	}
 }
 
+func (ms *memStorage) GetMetricJSONGauge(name string) (*float64, error) {
+	ms.mu.Lock()
+	value, ok := ms.metricsGauge[name]
+	ms.mu.Unlock()
+	if ok {
+		return &value, nil
+	} else {
+		err := fmt.Errorf("metric %s doesn't exist", name)
+		return nil, err
+	}
+}
+
 func (ms *memStorage) GetMetricCounter(name string) (uint64, error) {
 	ms.mu.Lock()
 	value, ok := ms.metricsCounter[name]
@@ -62,6 +76,19 @@ func (ms *memStorage) GetMetricCounter(name string) (uint64, error) {
 	} else {
 		err := fmt.Errorf("metric %s doesn't exist", name)
 		return 0, err
+	}
+}
+
+func (ms *memStorage) GetMetricJSONCounter(name string) (*int64, error) {
+	ms.mu.Lock()
+	uvalue, ok := ms.metricsCounter[name]
+	ms.mu.Unlock()
+	if ok {
+		value := int64(uvalue)
+		return &value, nil
+	} else {
+		err := fmt.Errorf("metric %s doesn't exist", name)
+		return nil, err
 	}
 }
 func (ms *memStorage) GetAllMetrics() []string {
