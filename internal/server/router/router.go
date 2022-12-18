@@ -6,13 +6,13 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/popooq/collectimg-ma/internal/server/handlers"
-	"github.com/popooq/collectimg-ma/internal/utils/serializator"
+	"github.com/popooq/collectimg-ma/internal/utils/coder"
 	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
 func NewRouter() chi.Router {
 	memS := storage.NewMemStorage()
-	metricStruct := serializator.NewMetricsStruct()
+	metricStruct := coder.NewMetricsStruct()
 	handler := handlers.NewMetricStorage(memS, metricStruct)
 
 	r := chi.NewRouter()
