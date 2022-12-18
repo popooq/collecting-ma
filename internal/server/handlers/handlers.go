@@ -102,20 +102,26 @@ func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		log.Println("something goes wrong")
 	}
-
+	log.Printf("%s", r.Body)
+	log.Printf("metric struct: %+v", ms.coder)
 	switch {
 	case ms.coder.MType == "gauge":
 		ms.storage.InsertMetric(ms.coder.ID, *ms.coder.Value)
+		log.Printf("value: %p", ms.coder.Value)
 		ms.coder.Value, err = ms.storage.GetMetricJSONGauge(ms.coder.ID)
+		log.Printf("value: %p", ms.coder.Value)
+		ms.coder.Delta = nil
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
 	case ms.coder.MType == "counter":
 		ms.storage.CountCounterMetric(ms.coder.ID, uint64(*ms.coder.Delta))
+		log.Printf("delta: %p", ms.coder.Delta)
 		ms.coder.Delta, err = ms.storage.GetMetricJSONCounter(ms.coder.ID)
+		log.Printf("delta: %p", ms.coder.Delta)
+		ms.coder.Value = nil
 		if err != nil {
-
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
@@ -123,6 +129,7 @@ func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
+	log.Printf("metric struct: %+v", ms.coder)
 	err = ms.coder.Encode(w)
 	if err != nil {
 		log.Println("something goes wrong", err)
