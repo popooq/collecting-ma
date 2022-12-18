@@ -7,13 +7,15 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/popooq/collectimg-ma/internal/utils/serializator"
 	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
 func NewRouter() chi.Router {
 
 	MemS := storage.NewMemStorage()
-	handler := NewMetricStorage(MemS)
+	metricStruct := serializator.NewMetricsStruct()
+	handler := NewMetricStorage(MemS, metricStruct)
 
 	MemS.InsertMetric("Alloc", 123.000)
 	MemS.CountCounterMetric("PollCount", 34)
