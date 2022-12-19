@@ -34,3 +34,7 @@ func (m *Metrics) Encode(body io.Writer) error {
 	}
 	return nil
 }
+
+func (m *Metrics) Marshall() ([]byte, error) {
+	return json.Marshal(m)
+}

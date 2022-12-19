@@ -15,8 +15,10 @@ import (
 func SendMetrics(data collector.MetricsMap) {
 	for k, v := range data {
 		var coder coder.Metrics
-		var buf bytes.Buffer
-		log.Printf("&buf %p", &buf)
+		fmt.Println("")
+		fmt.Println("")
+		fmt.Println("")
+		fmt.Println("")
 		types := strings.TrimPrefix(fmt.Sprintf("%T", v), "collector.")
 		types = strings.ToLower(types)
 
@@ -26,7 +28,6 @@ func SendMetrics(data collector.MetricsMap) {
 			assertv := v.(collector.Gauge)
 			floatv := float64(assertv)
 			coder.Value = &floatv
-			log.Printf("coder.Value %p, &floatv %p, floatv %f, v %f", coder.Value, &floatv, floatv, v)
 		}
 		if coder.MType == "counter" {
 			assertv, ok := v.(collector.Counter)
@@ -35,19 +36,21 @@ func SendMetrics(data collector.MetricsMap) {
 			}
 			intv := int64(assertv)
 			coder.Delta = &intv
-			log.Printf("coder.Delta %p, &intv %p , intv %d, v %d ", coder.Delta, &intv, intv, v)
+
 		}
-		err := coder.Encode(&buf)
+		body, err := coder.Marshall()
 		if err != nil {
 			log.Printf("error %s in agent", err)
 		}
 		//		log.Printf("&buf %p", &buf)
 		log.Printf("struct %+v", coder)
 		endpoint := "http://127.0.0.1:8080/update/"
-		resp, err := http.Post(endpoint, "text/plain", &buf)
+		resp, err := http.Post(endpoint, "application/json", bytes.NewBuffer(body))
 		if err != nil {
 			fmt.Println("Server unreachible")
 		}
+		log.Printf("response header : %+v", resp.Header)
+		log.Printf("Resp body %+v", resp.Body)
 		defer resp.Body.Close()
 	}
 }

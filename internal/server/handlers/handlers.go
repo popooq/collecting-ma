@@ -102,14 +102,14 @@ func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		log.Println("something goes wrong")
 	}
-	log.Printf("%s", r.Body)
-	log.Printf("metric struct: %+v", ms.coder)
+	log.Printf("request :%+v", r)
+	log.Printf("metric struct before: %+v", ms.coder)
 	switch {
 	case ms.coder.MType == "gauge":
 		ms.storage.InsertMetric(ms.coder.ID, *ms.coder.Value)
-		log.Printf("value: %p", ms.coder.Value)
+		log.Printf("value addres before: %p", ms.coder.Value)
 		ms.coder.Value, err = ms.storage.GetMetricJSONGauge(ms.coder.ID)
-		log.Printf("value: %p", ms.coder.Value)
+		log.Printf("value addres after: %p", ms.coder.Value)
 		ms.coder.Delta = nil
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
@@ -117,9 +117,9 @@ func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 		}
 	case ms.coder.MType == "counter":
 		ms.storage.CountCounterMetric(ms.coder.ID, uint64(*ms.coder.Delta))
-		log.Printf("delta: %p", ms.coder.Delta)
+		log.Printf("delta addres: %p", ms.coder.Delta)
 		ms.coder.Delta, err = ms.storage.GetMetricJSONCounter(ms.coder.ID)
-		log.Printf("delta: %p", ms.coder.Delta)
+		log.Printf("delta addres: %p", ms.coder.Delta)
 		ms.coder.Value = nil
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
@@ -129,13 +129,15 @@ func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
-	log.Printf("metric struct: %+v", ms.coder)
+	log.Printf("metric struct after: %+v", ms.coder)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	err = ms.coder.Encode(w)
 	if err != nil {
 		log.Println("something goes wrong", err)
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	log.Printf("Response %+v", w)
 }
 
 func (ms metricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) {
@@ -166,10 +168,10 @@ func (ms metricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	err = ms.coder.Encode(w)
 	if err != nil {
 		log.Println("simething goes wrong", err)
 	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
 }
