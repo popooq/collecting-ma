@@ -45,7 +45,7 @@ func SendMetrics(metricData collector.MetricsMap) {
 			log.Printf("error %s in agent", err)
 		}
 		log.Printf("struct %+v", encoder)
-		endpoint := "http://127.0.0.1:8080/update"
+		endpoint := "http://127.0.0.1:8080/update/"
 		resp, err := http.Post(endpoint, "application/json", bytes.NewBuffer(body))
 		if err != nil {
 			fmt.Println("Server unreachible")
