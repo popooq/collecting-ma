@@ -9,42 +9,43 @@ import (
 	"strings"
 
 	"github.com/popooq/collectimg-ma/internal/agent/utils/collector"
-	"github.com/popooq/collectimg-ma/internal/utils/coder"
+	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 )
 
-func SendMetrics(data collector.MetricsMap) {
-	for k, v := range data {
-		var coder coder.Metrics
+func SendMetrics(metricData collector.MetricsMap) {
+	for k, v := range metricData {
+		var encoder encoder.Metrics
 		fmt.Println("")
 		fmt.Println("")
 		fmt.Println("")
 		fmt.Println("")
-		types := strings.TrimPrefix(fmt.Sprintf("%T", v), "collector.")
-		types = strings.ToLower(types)
+		types := strings.ToLower(strings.TrimPrefix(fmt.Sprintf("%T", v), "collector."))
 
-		coder.ID = k
-		coder.MType = types
-		if coder.MType == "gauge" {
-			assertv := v.(collector.Gauge)
-			floatv := float64(assertv)
-			coder.Value = &floatv
-		}
-		if coder.MType == "counter" {
-			assertv, ok := v.(collector.Counter)
+		encoder.ID = k
+		encoder.MType = types
+		if encoder.MType == "gauge" {
+			assertvalue, ok := v.(collector.Gauge)
 			if !ok {
 				log.Printf("conversion failed")
 			}
-			intv := int64(assertv)
-			coder.Delta = &intv
+			floatvalue := float64(assertvalue)
+			encoder.Value = &floatvalue
+		}
+		if encoder.MType == "counter" {
+			assertdelta, ok := v.(collector.Counter)
+			if !ok {
+				log.Printf("conversion failed")
+			}
+			intdelta := int64(assertdelta)
+			encoder.Delta = &intdelta
 
 		}
-		body, err := coder.Marshall()
+		body, err := encoder.Marshall()
 		if err != nil {
 			log.Printf("error %s in agent", err)
 		}
-		//		log.Printf("&buf %p", &buf)
-		log.Printf("struct %+v", coder)
-		endpoint := "http://127.0.0.1:8080/update/"
+		log.Printf("struct %+v", encoder)
+		endpoint := "http://127.0.0.1:8080/update"
 		resp, err := http.Post(endpoint, "application/json", bytes.NewBuffer(body))
 		if err != nil {
 			fmt.Println("Server unreachible")

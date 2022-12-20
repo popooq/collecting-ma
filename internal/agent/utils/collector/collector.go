@@ -13,10 +13,10 @@ type (
 
 func CollectMetrics(metricList MetricsMap, count uint64) {
 	var (
-		c Counter
-		m runtime.MemStats
+		counter Counter
+		m       runtime.MemStats
 	)
-	c = Counter(count)
+	counter = Counter(count)
 
 	runtime.ReadMemStats(&m)
 
@@ -47,6 +47,6 @@ func CollectMetrics(metricList MetricsMap, count uint64) {
 	metricList["StackSys"] = Gauge(m.StackSys)
 	metricList["Sys"] = Gauge(m.Sys)
 	metricList["TotalAlloc"] = Gauge(m.TotalAlloc)
-	metricList["PollCount"] = c
+	metricList["PollCount"] = counter
 	metricList["RandomValue"] = Gauge(rand.Uint64())
 }

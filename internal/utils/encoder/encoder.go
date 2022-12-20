@@ -1,4 +1,4 @@
-package coder
+package encoder
 
 import (
 	"encoding/json"
@@ -12,7 +12,7 @@ type Metrics struct {
 	Value *float64 `json:"value,omitempty"` // значение метрики в случае передачи gauge
 }
 
-func NewMetricsStruct() *Metrics {
+func NewEncoderMetricsStruct() *Metrics {
 	return &Metrics{}
 }
 func (m *Metrics) Decode(body io.ReadCloser) error {

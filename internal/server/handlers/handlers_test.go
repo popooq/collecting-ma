@@ -7,14 +7,14 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/popooq/collectimg-ma/internal/utils/coder"
+	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
 func NewRouter() chi.Router {
 
-	MemS := storage.NewMemStorage()
-	metricStruct := coder.NewMetricsStruct()
+	MemS := storage.NewMetricStorage()
+	metricStruct := encoder.NewEncoderMetricsStruct()
 	handler := NewMetricStorage(MemS, metricStruct)
 
 	MemS.InsertMetric("Alloc", 123.000)

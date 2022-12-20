@@ -6,7 +6,7 @@ import (
 )
 
 type (
-	MemeS interface {
+	Storage interface {
 		InsertMetric(name string, value float64)
 		CountCounterMetric(name string, value uint64)
 		GetMetricGauge(name string) (float64, error)
@@ -16,34 +16,34 @@ type (
 		GetMetricJSONCounter(name string) (*int64, error)
 	}
 
-	memStorage struct {
+	metricsStorage struct {
 		metricsGauge   map[string]float64
 		metricsCounter map[string]uint64
 		mu             sync.Mutex
 	}
 )
 
-func NewMemStorage() *memStorage {
-	var ms memStorage
+func NewMetricStorage() *metricsStorage {
+	var ms metricsStorage
 	ms.mu = sync.Mutex{}
 	ms.metricsGauge = make(map[string]float64)
 	ms.metricsCounter = make(map[string]uint64)
 	return &ms
 }
 
-func (ms *memStorage) InsertMetric(name string, value float64) {
+func (ms *metricsStorage) InsertMetric(name string, value float64) {
 	ms.mu.Lock()
 	ms.metricsGauge[name] = value
 	ms.mu.Unlock()
 }
 
-func (ms *memStorage) CountCounterMetric(name string, value uint64) {
+func (ms *metricsStorage) CountCounterMetric(name string, value uint64) {
 	ms.mu.Lock()
 	ms.metricsCounter[name] += value
 	ms.mu.Unlock()
 }
 
-func (ms *memStorage) GetMetricGauge(name string) (float64, error) {
+func (ms *metricsStorage) GetMetricGauge(name string) (float64, error) {
 	ms.mu.Lock()
 	value, ok := ms.metricsGauge[name]
 	ms.mu.Unlock()
@@ -55,7 +55,7 @@ func (ms *memStorage) GetMetricGauge(name string) (float64, error) {
 	}
 }
 
-func (ms *memStorage) GetMetricJSONGauge(name string) (*float64, error) {
+func (ms *metricsStorage) GetMetricJSONGauge(name string) (*float64, error) {
 	ms.mu.Lock()
 	value, ok := ms.metricsGauge[name]
 	ms.mu.Unlock()
@@ -67,7 +67,7 @@ func (ms *memStorage) GetMetricJSONGauge(name string) (*float64, error) {
 	}
 }
 
-func (ms *memStorage) GetMetricCounter(name string) (uint64, error) {
+func (ms *metricsStorage) GetMetricCounter(name string) (uint64, error) {
 	ms.mu.Lock()
 	value, ok := ms.metricsCounter[name]
 	ms.mu.Unlock()
@@ -79,7 +79,7 @@ func (ms *memStorage) GetMetricCounter(name string) (uint64, error) {
 	}
 }
 
-func (ms *memStorage) GetMetricJSONCounter(name string) (*int64, error) {
+func (ms *metricsStorage) GetMetricJSONCounter(name string) (*int64, error) {
 	ms.mu.Lock()
 	uvalue, ok := ms.metricsCounter[name]
 	ms.mu.Unlock()
@@ -91,7 +91,7 @@ func (ms *memStorage) GetMetricJSONCounter(name string) (*int64, error) {
 		return nil, err
 	}
 }
-func (ms *memStorage) GetAllMetrics() []string {
+func (ms *metricsStorage) GetAllMetrics() []string {
 	ms.mu.Lock()
 	allMetrics := []string{}
 	ms.mu.Unlock()
