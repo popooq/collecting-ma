@@ -150,19 +150,27 @@ func (ms metricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 	switch {
 	case ms.encoder.MType == "gauge":
 		gaugeValue, err := ms.storage.GetMetricGauge(ms.encoder.ID)
+		log.Printf("counter value = %f", gaugeValue)
 		if err != nil {
+			log.Printf("this metric doesn't exist %s", ms.encoder.ID)
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
+		log.Printf("ms.encoder.Value before = %f", *ms.encoder.Value)
 		ms.encoder.Value = &gaugeValue
+		log.Printf("ms.encoder.Value after = %f", *ms.encoder.Value)
 	case ms.encoder.MType == "counter":
 		value, err := ms.storage.GetMetricCounter(ms.encoder.ID)
+		log.Printf("counter value = %d", value)
 		if err != nil {
+			log.Printf("this metric doesn't exist %s", ms.encoder.ID)
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
+		log.Printf("ms.encoder.Delta before = %d", *ms.encoder.Delta)
 		counterVal := int64(value)
 		ms.encoder.Delta = &counterVal
+		log.Printf("ms.encoder.Delta after = %d", *ms.encoder.Delta)
 	default:
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
