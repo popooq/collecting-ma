@@ -21,6 +21,8 @@ type (
 		metricsCounter map[string]uint64
 		mu             sync.Mutex
 	}
+	Gauge   float64
+	Counter int64
 )
 
 func NewMetricStorage() *metricsStorage {

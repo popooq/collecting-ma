@@ -3,50 +3,50 @@ package collector
 import (
 	"math/rand"
 	"runtime"
+
+	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
 type (
-	Gauge      float64
-	Counter    uint64
 	MetricsMap map[string]any
 )
 
 func CollectMetrics(metricList MetricsMap, count uint64) {
 	var (
-		counter Counter
+		counter storage.Counter
 		m       runtime.MemStats
 	)
-	counter = Counter(count)
+	counter = storage.Counter(count)
 
 	runtime.ReadMemStats(&m)
 
-	metricList["Alloc"] = Gauge(m.Alloc)
-	metricList["BuckHashSys"] = Gauge(m.BuckHashSys)
-	metricList["Frees"] = Gauge(m.Frees)
-	metricList["GCCPUFraction"] = Gauge(m.GCCPUFraction)
-	metricList["GCSys"] = Gauge(m.GCSys)
-	metricList["HeapAlloc"] = Gauge(m.HeapAlloc)
-	metricList["HeapIdle"] = Gauge(m.HeapIdle)
-	metricList["HeapInuse"] = Gauge(m.HeapInuse)
-	metricList["HeapObjects"] = Gauge(m.HeapObjects)
-	metricList["HeapReleased"] = Gauge(m.HeapReleased)
-	metricList["HeapSys"] = Gauge(m.HeapSys)
-	metricList["LastGC"] = Gauge(m.LastGC)
-	metricList["Lookups"] = Gauge(m.Lookups)
-	metricList["MCacheInuse"] = Gauge(m.MCacheInuse)
-	metricList["MCacheSys"] = Gauge(m.MCacheSys)
-	metricList["MSpanInuse"] = Gauge(m.MSpanInuse)
-	metricList["MSpanSys"] = Gauge(m.MSpanSys)
-	metricList["Mallocs"] = Gauge(m.Mallocs)
-	metricList["NextGC"] = Gauge(m.NextGC)
-	metricList["NumForcedGC"] = Gauge(m.NumForcedGC)
-	metricList["NumGC"] = Gauge(m.NumGC)
-	metricList["OtherSys"] = Gauge(m.OtherSys)
-	metricList["PauseTotalNs"] = Gauge(m.PauseTotalNs)
-	metricList["StackInuse"] = Gauge(m.StackInuse)
-	metricList["StackSys"] = Gauge(m.StackSys)
-	metricList["Sys"] = Gauge(m.Sys)
-	metricList["TotalAlloc"] = Gauge(m.TotalAlloc)
+	metricList["Alloc"] = storage.Gauge(m.Alloc)
+	metricList["BuckHashSys"] = storage.Gauge(m.BuckHashSys)
+	metricList["Frees"] = storage.Gauge(m.Frees)
+	metricList["GCCPUFraction"] = storage.Gauge(m.GCCPUFraction)
+	metricList["GCSys"] = storage.Gauge(m.GCSys)
+	metricList["HeapAlloc"] = storage.Gauge(m.HeapAlloc)
+	metricList["HeapIdle"] = storage.Gauge(m.HeapIdle)
+	metricList["HeapInuse"] = storage.Gauge(m.HeapInuse)
+	metricList["HeapObjects"] = storage.Gauge(m.HeapObjects)
+	metricList["HeapReleased"] = storage.Gauge(m.HeapReleased)
+	metricList["HeapSys"] = storage.Gauge(m.HeapSys)
+	metricList["LastGC"] = storage.Gauge(m.LastGC)
+	metricList["Lookups"] = storage.Gauge(m.Lookups)
+	metricList["MCacheInuse"] = storage.Gauge(m.MCacheInuse)
+	metricList["MCacheSys"] = storage.Gauge(m.MCacheSys)
+	metricList["MSpanInuse"] = storage.Gauge(m.MSpanInuse)
+	metricList["MSpanSys"] = storage.Gauge(m.MSpanSys)
+	metricList["Mallocs"] = storage.Gauge(m.Mallocs)
+	metricList["NextGC"] = storage.Gauge(m.NextGC)
+	metricList["NumForcedGC"] = storage.Gauge(m.NumForcedGC)
+	metricList["NumGC"] = storage.Gauge(m.NumGC)
+	metricList["OtherSys"] = storage.Gauge(m.OtherSys)
+	metricList["PauseTotalNs"] = storage.Gauge(m.PauseTotalNs)
+	metricList["StackInuse"] = storage.Gauge(m.StackInuse)
+	metricList["StackSys"] = storage.Gauge(m.StackSys)
+	metricList["Sys"] = storage.Gauge(m.Sys)
+	metricList["TotalAlloc"] = storage.Gauge(m.TotalAlloc)
 	metricList["PollCount"] = counter
-	metricList["RandomValue"] = Gauge(rand.Uint64())
+	metricList["RandomValue"] = storage.Gauge(rand.Uint64())
 }
