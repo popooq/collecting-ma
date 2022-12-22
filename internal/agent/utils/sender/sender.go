@@ -12,17 +12,11 @@ import (
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 )
 
-var encoderJSON encoder.Metrics
-
 func SendMetrics(metricData collector.MetricsMap) {
+	var encoderJSON encoder.Metrics
 	for k, v := range metricData {
-
-		fmt.Println("")
-		fmt.Println("")
-		fmt.Println("")
-		fmt.Println("")
 		types := strings.ToLower(strings.TrimPrefix(fmt.Sprintf("%T", v), "collector."))
-
+		log.Printf("JSON before : %+v", encoderJSON)
 		encoderJSON.ID = k
 		encoderJSON.MType = types
 		if encoderJSON.MType == "gauge" {
@@ -47,14 +41,12 @@ func SendMetrics(metricData collector.MetricsMap) {
 		if err != nil {
 			log.Printf("error %s in agent", err)
 		}
-		log.Printf("struct %+v", encoderJSON)
+		log.Printf("JSOM after: %+v", encoderJSON)
 		endpoint := "http://127.0.0.1:8080/update/"
 		resp, err := http.Post(endpoint, "application/json", bytes.NewBuffer(body))
 		if err != nil {
 			fmt.Println("Server unreachible")
 		}
-		log.Printf("response header : %+v", resp.Header)
-		log.Printf("Resp body %+v", resp.Body)
 		defer resp.Body.Close()
 	}
 }
