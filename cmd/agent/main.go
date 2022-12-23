@@ -9,10 +9,6 @@ import (
 	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
-type (
-	counter int64
-)
-
 const (
 	pollInterval   = 2 * time.Second
 	reportInterval = 10 * time.Second
@@ -20,52 +16,17 @@ const (
 
 func main() {
 	var (
-		m runtime.MemStats
-		//	g            gauge
-		c            counter
+		m            runtime.MemStats
+		c            int64
 		tickerpoll   = time.NewTicker(pollInterval)
 		tickerreport = time.NewTicker(reportInterval)
-		// metrics      = collector.MetricsMap{
-
-		// 	"Alloc":         g,
-		// 	"BuckHashSys":   g,
-		// 	"Frees":         g,
-		// 	"GCCPUFraction": g,
-		// 	"GCSys":         g,
-		// 	"HeapAlloc":     g,
-		// 	"HeapIdle":      g,
-		// 	"HeapInuse":     g,
-		// 	"HeapObjects":   g,
-		// 	"HeapReleased":  g,
-		// 	"HeapSys":       g,
-		// 	"LastGC":        g,
-		// 	"Lookups":       g,
-		// 	"MCacheInuse":   g,
-		// 	"MCacheSys":     g,
-		// 	"MSpanInuse":    g,
-		// 	"MSpanSys":      g,
-		// 	"Mallocs":       g,
-		// 	"NextGC":        g,
-		// 	"NumForcedGC":   g,
-		// 	"NumGC":         g,
-		// 	"OtherSys":      g,
-		// 	"PauseTotalNs":  g,
-		// 	"StackInuse":    g,
-		// 	"StackSys":      g,
-		// 	"Sys":           g,
-		// 	"TotalAlloc":    g,
-		// 	"PollCount":     c,
-		// 	"RandomValue":   g,
-		// }
 	)
 	for {
 		select {
 		case <-tickerpoll.C:
 			runtime.ReadMemStats(&m)
-			//	collector.CollectMetrics(metrics, uint64(c))
 			c++
 		case <-tickerreport.C:
-			//sender.SendMetricsMap(metrics)
 			sender.SendMetrics(storage.Counter(c), "PollCount")
 			sender.SendMetrics(storage.Gauge(m.Alloc), "Alloc")
 			sender.SendMetrics(storage.Gauge(m.BuckHashSys), "BuckHashSys")

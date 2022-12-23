@@ -55,8 +55,6 @@ var (
 // }
 
 func SendMetrics(value any, name string) {
-	log.Printf("JSON before : %+v", encoderJSON)
-	log.Printf("metric type = %T", value)
 	types := strings.ToLower(strings.TrimPrefix(fmt.Sprintf("%T", value), "storage."))
 	encoderJSON.ID = name
 	encoderJSON.MType = types
@@ -68,7 +66,6 @@ func SendMetrics(value any, name string) {
 		floatvalue := float64(assertvalue)
 		encoderJSON.Value = &floatvalue
 		encoderJSON.Delta = nil
-		log.Printf("value %f", *encoderJSON.Value)
 	}
 	if encoderJSON.MType == "counter" {
 		assertdelta, ok := value.(storage.Counter)
@@ -83,11 +80,10 @@ func SendMetrics(value any, name string) {
 	if err != nil {
 		log.Printf("error %s in agent", err)
 	}
-	log.Printf("JSON after: %+v", encoderJSON)
 	endpoint := "http://127.0.0.1:8080/update/"
 	resp, err := http.Post(endpoint, "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		fmt.Printf("Server unreachible, error: %s", err)
+		log.Printf("Server unreachible, error: %s", err)
 	} else {
 		defer resp.Body.Close()
 	}
