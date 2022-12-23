@@ -167,7 +167,6 @@ func (ms metricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
-		log.Printf("ms.encoder.Delta before = %d", *ms.encoder.Delta)
 		counterVal := int64(value)
 		ms.encoder.Delta = &counterVal
 		log.Printf("ms.encoder.Delta after = %d", *ms.encoder.Delta)
