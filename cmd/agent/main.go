@@ -5,21 +5,18 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/popooq/collectimg-ma/internal/agent/utils/sender"
+	"github.com/popooq/collectimg-ma/internal/agent/sender"
+	"github.com/popooq/collectimg-ma/internal/utils/env"
 	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
-const (
-	pollInterval   = 2 * time.Second
-	reportInterval = 10 * time.Second
-)
-
 func main() {
+	cfg := env.AgentConfig()
 	var (
 		m            runtime.MemStats
 		c            int64
-		tickerpoll   = time.NewTicker(pollInterval)
-		tickerreport = time.NewTicker(reportInterval)
+		tickerpoll   = time.NewTicker(cfg.PollInterval)
+		tickerreport = time.NewTicker(cfg.ReportInterval)
 	)
 	for {
 		select {
@@ -27,35 +24,35 @@ func main() {
 			runtime.ReadMemStats(&m)
 			c++
 		case <-tickerreport.C:
-			sender.SendMetrics(storage.Counter(c), "PollCount")
-			sender.SendMetrics(storage.Gauge(m.Alloc), "Alloc")
-			sender.SendMetrics(storage.Gauge(m.BuckHashSys), "BuckHashSys")
-			sender.SendMetrics(storage.Gauge(m.Frees), "Frees")
-			sender.SendMetrics(storage.Gauge(m.GCCPUFraction), "GCCPUFraction")
-			sender.SendMetrics(storage.Gauge(m.GCSys), "GCSys")
-			sender.SendMetrics(storage.Gauge(m.HeapAlloc), "HeapAlloc")
-			sender.SendMetrics(storage.Gauge(m.HeapIdle), "HeapIdle")
-			sender.SendMetrics(storage.Gauge(m.HeapInuse), "HeapInuse")
-			sender.SendMetrics(storage.Gauge(m.HeapObjects), "HeapObjects")
-			sender.SendMetrics(storage.Gauge(m.HeapReleased), "HeapReleased")
-			sender.SendMetrics(storage.Gauge(m.HeapSys), "HeapSys")
-			sender.SendMetrics(storage.Gauge(m.LastGC), "LastGC")
-			sender.SendMetrics(storage.Gauge(m.Lookups), "Lookups")
-			sender.SendMetrics(storage.Gauge(m.MCacheInuse), "MCacheInuse")
-			sender.SendMetrics(storage.Gauge(m.MCacheSys), "MCacheSys")
-			sender.SendMetrics(storage.Gauge(m.MSpanInuse), "MSpanInuse")
-			sender.SendMetrics(storage.Gauge(m.MSpanSys), "MSpanSys")
-			sender.SendMetrics(storage.Gauge(m.Mallocs), "Mallocs")
-			sender.SendMetrics(storage.Gauge(m.NextGC), "NextGC")
-			sender.SendMetrics(storage.Gauge(m.NumForcedGC), "NumForcedGC")
-			sender.SendMetrics(storage.Gauge(m.NumGC), "NumGC")
-			sender.SendMetrics(storage.Gauge(m.OtherSys), "OtherSys")
-			sender.SendMetrics(storage.Gauge(m.PauseTotalNs), "PauseTotalNs")
-			sender.SendMetrics(storage.Gauge(m.StackInuse), "StackInuse")
-			sender.SendMetrics(storage.Gauge(m.StackSys), "StackSys")
-			sender.SendMetrics(storage.Gauge(m.Sys), "Sys")
-			sender.SendMetrics(storage.Gauge(m.TotalAlloc), "TotalAlloc")
-			sender.SendMetrics(storage.Gauge(rand.Uint64()), "RandomValue")
+			sender.SendMetrics(storage.Counter(c), "PollCount", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.Alloc), "Alloc", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.BuckHashSys), "BuckHashSys", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.Frees), "Frees", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.GCCPUFraction), "GCCPUFraction", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.GCSys), "GCSys", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.HeapAlloc), "HeapAlloc", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.HeapIdle), "HeapIdle", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.HeapInuse), "HeapInuse", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.HeapObjects), "HeapObjects", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.HeapReleased), "HeapReleased", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.HeapSys), "HeapSys", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.LastGC), "LastGC", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.Lookups), "Lookups", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.MCacheInuse), "MCacheInuse", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.MCacheSys), "MCacheSys", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.MSpanInuse), "MSpanInuse", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.MSpanSys), "MSpanSys", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.Mallocs), "Mallocs", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.NextGC), "NextGC", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.NumForcedGC), "NumForcedGC", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.NumGC), "NumGC", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.OtherSys), "OtherSys", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.PauseTotalNs), "PauseTotalNs", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.StackInuse), "StackInuse", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.StackSys), "StackSys", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.Sys), "Sys", cfg.Address)
+			sender.SendMetrics(storage.Gauge(m.TotalAlloc), "TotalAlloc", cfg.Address)
+			sender.SendMetrics(storage.Gauge(rand.Uint64()), "RandomValue", cfg.Address)
 		}
 	}
 }

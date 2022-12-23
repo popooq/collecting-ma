@@ -5,10 +5,11 @@ import (
 	"net/http"
 
 	"github.com/popooq/collectimg-ma/internal/server/router"
+	"github.com/popooq/collectimg-ma/internal/utils/env"
 )
 
 func main() {
 	r := router.NewRouter()
-
-	log.Fatal(http.ListenAndServe("127.0.0.1:8080", r))
+	cfg := env.ServerConfig()
+	log.Fatal(http.ListenAndServe(cfg.Address, r))
 }

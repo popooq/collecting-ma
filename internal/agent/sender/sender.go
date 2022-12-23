@@ -54,7 +54,7 @@ var (
 // 	}
 // }
 
-func SendMetrics(value any, name string) {
+func SendMetrics(value any, name, endpoint string) {
 	types := strings.ToLower(strings.TrimPrefix(fmt.Sprintf("%T", value), "storage."))
 	encoderJSON.ID = name
 	encoderJSON.MType = types
@@ -80,7 +80,6 @@ func SendMetrics(value any, name string) {
 	if err != nil {
 		log.Printf("error %s in agent", err)
 	}
-	endpoint := "http://127.0.0.1:8080/update/"
 	resp, err := http.Post(endpoint, "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		log.Printf("Server unreachible, error: %s", err)
