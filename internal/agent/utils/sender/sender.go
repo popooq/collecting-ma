@@ -88,6 +88,7 @@ func SendMetrics(value any, name string) {
 	resp, err := http.Post(endpoint, "application/json", bytes.NewBuffer(body))
 	if err != nil {
 		fmt.Printf("Server unreachible, error: %s", err)
+	} else {
+		defer resp.Body.Close()
 	}
-	defer resp.Body.Close()
 }
