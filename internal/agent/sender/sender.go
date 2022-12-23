@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 
 	"strings"
 
@@ -79,6 +80,10 @@ func SendMetrics(value any, name, endpoint string) {
 	body, err := encoderJSON.Marshall()
 	if err != nil {
 		log.Printf("error %s in agent", err)
+	}
+	endpoint, err = url.JoinPath("http://", endpoint, "update/")
+	if err != nil {
+		log.Printf("url joining failed, error: %s", err)
 	}
 	resp, err := http.Post(endpoint, "application/json", bytes.NewBuffer(body))
 	if err != nil {
