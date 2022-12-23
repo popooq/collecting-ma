@@ -100,7 +100,6 @@ func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 
 	err := ms.encoder.Decode(r.Body)
 	if err != nil {
-		http.Error(w, "encoder failed:", http.StatusNotFound)
 		log.Println("something goes wrong")
 	}
 	log.Printf("request :%+v", r)
@@ -145,7 +144,6 @@ func (ms metricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 
 	err := ms.encoder.Decode(r.Body)
 	if err != nil {
-		http.Error(w, "encoder failed:", http.StatusNotFound)
 		log.Println("something goes wrong")
 	}
 
