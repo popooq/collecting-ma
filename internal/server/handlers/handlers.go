@@ -102,14 +102,10 @@ func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		log.Println("something goes wrong")
 	}
-	log.Printf("request :%+v", r)
-	log.Printf("metric struct before: %+v", ms.encoder)
 	switch {
 	case ms.encoder.MType == "gauge":
 		ms.storage.InsertMetric(ms.encoder.ID, *ms.encoder.Value)
-		log.Printf("value addres before: %p", ms.encoder.Value)
 		ms.encoder.Value, err = ms.storage.GetMetricJSONGauge(ms.encoder.ID)
-		log.Printf("value addres after: %p", ms.encoder.Value)
 		ms.encoder.Delta = nil
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
@@ -117,9 +113,7 @@ func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 		}
 	case ms.encoder.MType == "counter":
 		ms.storage.CountCounterMetric(ms.encoder.ID, uint64(*ms.encoder.Delta))
-		log.Printf("delta addres: %p", ms.encoder.Delta)
 		ms.encoder.Delta, err = ms.storage.GetMetricJSONCounter(ms.encoder.ID)
-		log.Printf("delta addres: %p", ms.encoder.Delta)
 		ms.encoder.Value = nil
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
@@ -137,7 +131,6 @@ func (ms metricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		log.Println("something goes wrong", err)
 	}
-	log.Printf("Response %+v", w)
 }
 
 func (ms metricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) {
@@ -146,7 +139,7 @@ func (ms metricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		log.Println("something goes wrong")
 	}
-
+	w.Header().Set("Content-Type", "application/json")
 	switch {
 	case ms.encoder.MType == "gauge":
 		gaugeValue, err := ms.storage.GetMetricGauge(ms.encoder.ID)
@@ -156,7 +149,6 @@ func (ms metricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
-		log.Printf("ms.encoder.Value before = %f", *ms.encoder.Value)
 		ms.encoder.Value = &gaugeValue
 		ms.encoder.Delta = nil
 		log.Printf("ms.encoder.Value after = %f", *ms.encoder.Value)
@@ -177,7 +169,6 @@ func (ms metricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	err = ms.encoder.Encode(w)
 	if err != nil {
