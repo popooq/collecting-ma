@@ -68,7 +68,7 @@ func SendMetrics(value any, name string) {
 		floatvalue := float64(assertvalue)
 		encoderJSON.Value = &floatvalue
 		encoderJSON.Delta = nil
-		log.Printf("value %f", *encoderJSON.Value)
+		log.Printf("%s value %.3f", name, *encoderJSON.Value)
 	}
 	if encoderJSON.MType == "counter" {
 		assertdelta, ok := value.(storage.Counter)
@@ -87,7 +87,7 @@ func SendMetrics(value any, name string) {
 	endpoint := "http://127.0.0.1:8080/update/"
 	resp, err := http.Post(endpoint, "application/json", bytes.NewBuffer(body))
 	if err != nil {
-		fmt.Println("Server unreachible")
+		fmt.Printf("Server unreachible %s", err)
 	}
 	defer resp.Body.Close()
 }

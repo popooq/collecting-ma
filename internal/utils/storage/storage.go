@@ -19,7 +19,7 @@ type (
 	metricsStorage struct {
 		metricsGauge   map[string]float64
 		metricsCounter map[string]uint64
-		mu             sync.Mutex
+		mu             *sync.Mutex
 	}
 	Gauge   float64
 	Counter int64
@@ -27,7 +27,7 @@ type (
 
 func NewMetricStorage() *metricsStorage {
 	var ms metricsStorage
-	ms.mu = sync.Mutex{}
+	ms.mu = &sync.Mutex{}
 	ms.metricsGauge = make(map[string]float64)
 	ms.metricsCounter = make(map[string]uint64)
 	return &ms
@@ -74,24 +74,22 @@ func (ms *metricsStorage) GetMetricCounter(name string) (uint64, error) {
 	value, ok := ms.metricsCounter[name]
 	ms.mu.Unlock()
 	if ok {
-		return value, nil
-	} else {
 		err := fmt.Errorf("metric %s doesn't exist", name)
 		return 0, err
 	}
+	return value, nil
 }
 
 func (ms *metricsStorage) GetMetricJSONCounter(name string) (*int64, error) {
 	ms.mu.Lock()
 	uvalue, ok := ms.metricsCounter[name]
 	ms.mu.Unlock()
-	if ok {
-		value := int64(uvalue)
-		return &value, nil
-	} else {
+	if !ok {
 		err := fmt.Errorf("metric %s doesn't exist", name)
 		return nil, err
 	}
+	value := int64(uvalue)
+	return &value, nil
 }
 func (ms *metricsStorage) GetAllMetrics() []string {
 	ms.mu.Lock()
