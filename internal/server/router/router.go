@@ -6,20 +6,15 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/popooq/collectimg-ma/internal/server/handlers"
-	"github.com/popooq/collectimg-ma/internal/utils/encoder"
-	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
-func NewRouter() chi.Router {
-	memS := storage.NewMetricStorage()
-	metricStruct := encoder.NewEncoderMetricsStruct()
-	handler := handlers.NewMetricStorage(memS, metricStruct)
+func NewRouter(handler handlers.MetricStorage) chi.Router {
 
 	router := chi.NewRouter()
 
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
-	router.Use(middleware.Logger)
+	// router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
 
 	router.Route("/", func(router chi.Router) {
