@@ -68,7 +68,7 @@ func (s *Backuper) Close() error {
 
 func (s *Backuper) SaveToFile() error {
 	s.file.Truncate(0)
-	metrics := s.storage.GetAllMetricsAsJson()
+	metrics := s.storage.GetAllMetricsAsJSON()
 	marshalledMetrics, err := json.MarshalIndent(metrics, "", "\t")
 	if err != nil {
 		log.Printf("error during marshalling: %s", err)

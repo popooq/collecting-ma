@@ -111,7 +111,7 @@ func (ms *MetricsStorage) GetAllMetrics() []string {
 	return allMetrics
 }
 
-func (ms *MetricsStorage) GetAllMetricsAsJson() []encoder.Metrics {
+func (ms *MetricsStorage) GetAllMetricsAsJSON() []encoder.Metrics {
 	ms.mu.Lock()
 	allMetrics := []encoder.Metrics{}
 	ms.mu.Unlock()

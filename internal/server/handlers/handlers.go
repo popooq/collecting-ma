@@ -86,7 +86,7 @@ func (ms MetricStorage) MetricValue(w http.ResponseWriter, r *http.Request) {
 
 func (ms MetricStorage) AllMetrics(w http.ResponseWriter, r *http.Request) {
 
-	allMetrics := ms.storage.GetAllMetricsAsJson()
+	allMetrics := ms.storage.GetAllMetrics()
 	listOfMetrics := fmt.Sprintf("%+v", allMetrics)
 
 	w.Header().Set("Content-Type", "text/plain")
