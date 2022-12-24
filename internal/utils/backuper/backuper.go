@@ -93,13 +93,11 @@ func (s *Backuper) SaveToFile() error {
 func (s *Backuper) Saver() error {
 	tickerstore := time.NewTicker(s.env.StoreInterval)
 	for {
-		select {
-		case <-tickerstore.C:
-			err := s.SaveToFile()
-			if err != nil {
-				log.Printf("error during savihng: %s", err)
-				return err
-			}
+		<-tickerstore.C
+		err := s.SaveToFile()
+		if err != nil {
+			log.Printf("error during savihng: %s", err)
+			return err
 		}
 	}
 }
