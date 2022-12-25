@@ -15,7 +15,7 @@ type ConfigAgent struct {
 
 type ConfigServer struct {
 	Address       string        `env:"ADDRESS" envDefault:"127.0.0.1:8080"`
-	StoreInterval time.Duration `env:"STORE_INTERVAL" envDefault:"300s"`
+	StoreInterval time.Duration `env:"STORE_INTERVAL" envDefault:"100s"`
 	Storefile     string        `env:"STORE_FILE,notEmpty" envDefault:"/tmp/devops-metrics-db.json" `
 	Restore       bool          `env:"RESTORE" envDefault:"true"`
 }

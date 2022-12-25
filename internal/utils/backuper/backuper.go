@@ -15,13 +15,14 @@ import (
 type Backuper struct {
 	storage *storage.MetricsStorage
 	env     *env.ConfigServer
+	enc     *encoder.Metrics
 
 	file   *os.File
 	writer *bufio.Writer
 }
 
-func NewSaver(storage *storage.MetricsStorage, env *env.ConfigServer) (*Backuper, error) {
-	file, err := os.OpenFile(env.Storefile, os.O_WRONLY|os.O_CREATE, 0777)
+func NewSaver(storage *storage.MetricsStorage, env *env.ConfigServer, enc *encoder.Metrics) (*Backuper, error) {
+	file, err := os.OpenFile(env.Storefile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
 	if err != nil {
 		log.Printf("error during opening file: %s", err)
 		return nil, err
@@ -30,6 +31,7 @@ func NewSaver(storage *storage.MetricsStorage, env *env.ConfigServer) (*Backuper
 	return &Backuper{
 		storage: storage,
 		env:     env,
+		enc:     enc,
 
 		file:   file,
 		writer: bufio.NewWriter(file),
@@ -67,26 +69,49 @@ func (s *Backuper) Close() error {
 }
 
 func (s *Backuper) SaveToFile() error {
-	s.file.Truncate(0)
-	metrics := s.storage.GetAllMetricsAsJSON()
-	marshalledMetrics, err := json.MarshalIndent(metrics, "", "\t")
-	if err != nil {
-		log.Printf("error during marshalling: %s", err)
-		return err
-	}
-	log.Printf("marshalled metrics: %s", marshalledMetrics)
+	for k, v := range s.storage.MetricsGauge {
+		s.enc.ID = k
+		s.enc.MType = "gauge"
+		s.enc.Value = &v
+		s.enc.Delta = nil
 
-	_, err = s.writer.Write(marshalledMetrics)
-	if err != nil {
-		log.Printf("error during writing: %s", err)
-		return err
+		data, err := s.enc.Marshall()
+		if err != nil {
+			log.Printf("error during marchalling: %s", err)
+			return err
+		}
+		_, err = s.writer.Write(data)
+		if err != nil {
+			log.Printf("error duriong writing: %s", err)
+			return err
+		}
+		err = s.writer.WriteByte('\n')
+		if err != nil {
+			return err
+		}
 	}
+	for k, v := range s.storage.MetricsCounter {
+		s.enc.ID = k
+		s.enc.MType = "counter"
+		s.enc.Value = nil
+		s.enc.Delta = &v
 
-	err = s.writer.WriteByte('\n')
-	if err != nil {
-		log.Printf("error during writebyte: %s", err)
-		return err
+		data, err := s.enc.Marshall()
+		if err != nil {
+			log.Printf("error during marchalling: %s", err)
+			return err
+		}
+		_, err = s.writer.Write(data)
+		if err != nil {
+			log.Printf("error duriong writing: %s", err)
+			return err
+		}
+		err = s.writer.WriteByte('\n')
+		if err != nil {
+			return err
+		}
 	}
+	log.Printf("new backup created")
 	return s.writer.Flush()
 }
 
@@ -107,12 +132,14 @@ func (l *Loader) Close() error {
 }
 
 func (l *Loader) LoadFromFile() ([]byte, error) {
+
 	for {
 		data, err := l.reader.ReadBytes('\n')
 		if err != nil {
 			log.Printf("error during read file: %s", err)
 			return nil, err
 		}
+		log.Printf("data %s", data)
 		err = json.Unmarshal(data, l.encoder)
 		if err != nil {
 			log.Printf("error during unmarshalling: %s", err)

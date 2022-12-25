@@ -18,15 +18,15 @@ func main() {
 	handler := handlers.NewMetricStorage(storage, encoder)
 	r := router.NewRouter(handler)
 	env := env.ServerConfig()
-	safe, err := backuper.NewSaver(storage, env)
+	safe, err := backuper.NewSaver(storage, env, encoder)
 	if err != nil {
 		log.Printf("error during create new saver %s", err)
 	}
-	loader, err := backuper.NewLoader(storage, env, encoder)
-	if err != nil {
-		log.Printf("error during create new loader %s", err)
-	}
 	if env.Restore {
+		loader, err := backuper.NewLoader(storage, env, encoder)
+		if err != nil {
+			log.Printf("error during create new loader %s", err)
+		}
 		loader.LoadFromFile()
 	}
 	go safe.Saver()

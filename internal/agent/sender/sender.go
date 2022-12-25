@@ -17,44 +17,6 @@ var (
 	encoderJSON encoder.Metrics
 )
 
-// func SendMetricsMap(metricData collector.MetricsMap) {
-// 	for k, v := range metricData {
-// 		types := strings.ToLower(strings.TrimPrefix(fmt.Sprintf("%T", v), "collector."))
-// 		log.Printf("JSON before : %+v", encoderJSON)
-// 		encoderJSON.ID = k
-// 		encoderJSON.MType = types
-// 		if encoderJSON.MType == "gauge" {
-// 			assertvalue, ok := v.(storage.Gauge)
-// 			if !ok {
-// 				log.Printf("conversion failed")
-// 			}
-// 			floatvalue := float64(assertvalue)
-// 			encoderJSON.Value = &floatvalue
-// 			encoderJSON.Delta = nil
-// 		}
-// 		if encoderJSON.MType == "counter" {
-// 			assertdelta, ok := v.(storage.Counter)
-// 			if !ok {
-// 				log.Printf("conversion failed")
-// 			}
-// 			intdelta := int64(assertdelta)
-// 			encoderJSON.Delta = &intdelta
-// 			encoderJSON.Value = nil
-// 		}
-// 		body, err := encoderJSON.Marshall()
-// 		if err != nil {
-// 			log.Printf("error %s in agent", err)
-// 		}
-// 		log.Printf("JSON after: %+v", encoderJSON)
-// 		endpoint := "http://127.0.0.1:8080/update/"
-// 		resp, err := http.Post(endpoint, "application/json", bytes.NewBuffer(body))
-// 		if err != nil {
-// 			fmt.Println("Server unreachible")
-// 		}
-// 		defer resp.Body.Close()
-// 	}
-// }
-
 func SendMetrics(value any, name, endpoint string) {
 	types := strings.ToLower(strings.TrimPrefix(fmt.Sprintf("%T", value), "storage."))
 	encoderJSON.ID = name
