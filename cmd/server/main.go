@@ -30,5 +30,5 @@ func main() {
 		loader.LoadFromFile()
 	}
 	go safe.Saver()
-	log.Fatal(http.ListenAndServe(cfg.Address, r))
+	log.Fatal(http.ListenAndServe(cfg.Address, handlers.GzipHandler(r)))
 }

@@ -1,20 +1,29 @@
 package handlers
 
 import (
+	"compress/gzip"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
-type MetricStorage struct {
-	storage *storage.MetricsStorage
-	encoder *encoder.Metrics
-}
+type (
+	MetricStorage struct {
+		storage *storage.MetricsStorage
+		encoder *encoder.Metrics
+	}
+	gzipWriter struct {
+		http.ResponseWriter
+		Writer io.Writer
+	}
+)
 
 func NewMetricStorage(stor *storage.MetricsStorage, encoder *encoder.Metrics) MetricStorage {
 	return MetricStorage{
@@ -48,7 +57,6 @@ func (ms MetricStorage) CollectMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
-	w.Header().Set("Content-Encoding", "gzip")
 	w.WriteHeader(http.StatusOK)
 	w.Write(nil)
 }
@@ -81,7 +89,6 @@ func (ms MetricStorage) MetricValue(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
-	w.Header().Set("Content-Encoding", "gzip")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(metricValue))
 }
@@ -92,7 +99,6 @@ func (ms MetricStorage) AllMetrics(w http.ResponseWriter, r *http.Request) {
 	listOfMetrics := fmt.Sprintf("%+v", allMetrics)
 
 	w.Header().Set("Content-Type", "text/plain")
-	w.Header().Set("Content-Encoding", "gzip")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(listOfMetrics))
 }
@@ -126,7 +132,6 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Content-Encoding", "gzip")
 	w.WriteHeader(http.StatusOK)
 	err = ms.encoder.Encode(w)
 	if err != nil {
@@ -142,7 +147,6 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Content-Encoding", "gzip")
 
 	switch {
 	case ms.encoder.MType == "gauge":
@@ -176,20 +180,24 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-// func GzipHandler(next http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-// 			next.ServeHTTP(w, r)
-// 			return
-// 		}
-// 		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
-// 		if err != nil {
-// 			io.WriteString(w, err.Error())
-// 			return
-// 		}
-// 		defer gz.Close()
+func (w gzipWriter) Write(b []byte) (int, error) {
+	return w.Writer.Write(b)
+}
 
-// 		w.Header().Set("Content-Encoding", "gzip")
-// 		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
-// 	})
-// }
+func GzipHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			next.ServeHTTP(w, r)
+			return
+		}
+		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+		if err != nil {
+			io.WriteString(w, err.Error())
+			return
+		}
+		defer gz.Close()
+
+		w.Header().Set("Content-Encoding", "gzip")
+		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
+	})
+}
