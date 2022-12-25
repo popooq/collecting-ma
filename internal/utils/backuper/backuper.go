@@ -147,9 +147,9 @@ func (l *Loader) LoadFromFile() ([]byte, error) {
 		}
 		switch l.encoder.MType {
 		case "gauge":
-			l.storage.InsertMetric(l.encoder.ID, *l.encoder.Value)
+			l.storage.GetBackupGauge(l.encoder.ID, *l.encoder.Value)
 		case "counter":
-			l.storage.CountCounterMetric(l.encoder.ID, *l.encoder.Delta)
+			l.storage.GetBackupCounter(l.encoder.ID, *l.encoder.Delta)
 		}
 	}
 }

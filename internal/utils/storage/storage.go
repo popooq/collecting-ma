@@ -17,6 +17,8 @@ type (
 		GetMetricCounter(name string) (int64, error)
 		GetMetricJSONGauge(name string) (*float64, error)
 		GetMetricJSONCounter(name string) (*int64, error)
+		GetBackupCounter(id string, delta int64)
+		GetBackupGauge(id string, delta float64)
 	}
 
 	MetricsStorage struct {
@@ -111,29 +113,14 @@ func (ms *MetricsStorage) GetAllMetrics() []string {
 	return allMetrics
 }
 
-func (ms *MetricsStorage) GetAllMetricsAsJSON() []encoder.Metrics {
+func (ms *MetricsStorage) GetBackupCounter(id string, delta int64) {
 	ms.mu.Lock()
-	allMetrics := []encoder.Metrics{}
+	ms.MetricsCounter[id] = delta
 	ms.mu.Unlock()
-	for k, v := range ms.MetricsGauge {
-		metric := encoder.Metrics{
-			ID:    k,
-			MType: "gauge",
-			Value: &v,
-			Delta: nil,
-		}
-		allMetrics = append(allMetrics, metric)
-	}
-	for k, v := range ms.MetricsCounter {
-		metric := encoder.Metrics{
-			ID:    k,
-			MType: "counter",
-			Value: nil,
-			Delta: &v,
-		}
+}
 
-		allMetrics = append(allMetrics, metric)
-	}
-	//log.Printf("slice of metrics JSON: %+v, slice of gauge: %+v, slice of counter: %+v", allMetrics, ms.MetricsGauge, ms.MetricsCounter)
-	return allMetrics
+func (ms *MetricsStorage) GetBackupGauge(id string, value float64) {
+	ms.mu.Lock()
+	ms.MetricsGauge[id] = value
+	ms.mu.Unlock()
 }
