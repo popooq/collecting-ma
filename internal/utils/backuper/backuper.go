@@ -7,30 +7,30 @@ import (
 	"os"
 	"time"
 
+	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
-	"github.com/popooq/collectimg-ma/internal/utils/env"
 	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
 type Backuper struct {
 	storage *storage.MetricsStorage
-	env     *env.ConfigServer
+	cfg     *config.Config
 	enc     *encoder.Metrics
 
 	file   *os.File
 	writer *bufio.Writer
 }
 
-func NewSaver(storage *storage.MetricsStorage, env *env.ConfigServer, enc *encoder.Metrics) (*Backuper, error) {
-	file, err := os.OpenFile(env.Storefile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
+func NewSaver(storage *storage.MetricsStorage, cfg *config.Config, enc *encoder.Metrics) (*Backuper, error) {
+	file, err := os.OpenFile(cfg.Storefile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
 	if err != nil {
 		log.Printf("error during opening file: %s", err)
 		return nil, err
 	}
-	log.Printf("sucsessifuly open file: %s", env.Storefile)
+	log.Printf("sucsessifuly open file: %s", cfg.Storefile)
 	return &Backuper{
 		storage: storage,
-		env:     env,
+		cfg:     cfg,
 		enc:     enc,
 
 		file:   file,
@@ -40,23 +40,23 @@ func NewSaver(storage *storage.MetricsStorage, env *env.ConfigServer, enc *encod
 
 type Loader struct {
 	storage *storage.MetricsStorage
-	env     *env.ConfigServer
+	cfg     *config.Config
 	encoder *encoder.Metrics
 
 	file   *os.File
 	reader *bufio.Reader
 }
 
-func NewLoader(storage *storage.MetricsStorage, env *env.ConfigServer, encoder *encoder.Metrics) (*Loader, error) {
-	file, err := os.OpenFile(env.Storefile, os.O_RDONLY|os.O_CREATE, 0777)
+func NewLoader(storage *storage.MetricsStorage, cfg *config.Config, encoder *encoder.Metrics) (*Loader, error) {
+	file, err := os.OpenFile(cfg.Storefile, os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {
 		log.Printf("error during opening file: %s", err)
 		return nil, err
 	}
-	log.Printf("sucsessifuly open file: %s", env.Storefile)
+	log.Printf("sucsessifuly open file: %s", cfg.Storefile)
 	return &Loader{
 		storage: storage,
-		env:     env,
+		cfg:     cfg,
 		encoder: encoder,
 
 		file:   file,
@@ -116,7 +116,7 @@ func (s *Backuper) SaveToFile() error {
 }
 
 func (s *Backuper) Saver() error {
-	tickerstore := time.NewTicker(s.env.StoreInterval)
+	tickerstore := time.NewTicker(s.cfg.StoreInterval)
 	for {
 		<-tickerstore.C
 		err := s.SaveToFile()

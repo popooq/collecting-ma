@@ -5,13 +5,13 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/popooq/collectimg-ma/internal/agent/config"
 	"github.com/popooq/collectimg-ma/internal/agent/sender"
-	"github.com/popooq/collectimg-ma/internal/utils/env"
 	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
 func main() {
-	cfg := env.AgentConfig()
+	cfg := config.NewAgentConfig()
 	var (
 		m            runtime.MemStats
 		c            int64

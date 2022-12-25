@@ -3,8 +3,6 @@ package storage
 import (
 	"fmt"
 	"sync"
-
-	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 )
 
 type (
@@ -13,7 +11,6 @@ type (
 		CountCounterMetric(name string, value int64)
 		GetMetricGauge(name string) (float64, error)
 		GetAllMetrics() []string
-		GetAllMetricsAsJson() []encoder.Metrics
 		GetMetricCounter(name string) (int64, error)
 		GetMetricJSONGauge(name string) (*float64, error)
 		GetMetricJSONCounter(name string) (*int64, error)
