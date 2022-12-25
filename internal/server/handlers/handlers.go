@@ -98,7 +98,7 @@ func (ms MetricStorage) AllMetrics(w http.ResponseWriter, r *http.Request) {
 	allMetrics := ms.storage.GetAllMetrics()
 	listOfMetrics := fmt.Sprintf("%+v", allMetrics)
 
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(listOfMetrics))
 }
