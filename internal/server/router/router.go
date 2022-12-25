@@ -14,8 +14,9 @@ func NewRouter(handler handlers.MetricStorage) chi.Router {
 
 	router.Use(middleware.RequestID)
 	router.Use(middleware.RealIP)
-	// router.Use(middleware.Logger)
+	router.Use(middleware.Logger)
 	router.Use(middleware.Recoverer)
+	router.Use(middleware.Compress(5, "text/plain", "application/json"))
 
 	router.Route("/", func(router chi.Router) {
 		router.Post("/update/{mType}/{mName}/{mValue}", func(w http.ResponseWriter, r *http.Request) {
