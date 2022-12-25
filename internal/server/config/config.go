@@ -11,7 +11,7 @@ import (
 type Config struct {
 	Address       string        `env:"ADDRESS"`
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
-	Storefile     string        `env:"STORE_FILE,notEmpty"`
+	Storefile     string        `env:"STORE_FILE"`
 	Restore       bool          `env:"RESTORE"`
 }
 
