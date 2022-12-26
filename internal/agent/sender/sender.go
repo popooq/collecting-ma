@@ -9,12 +9,12 @@ import (
 
 	"strings"
 
+	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
-	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
 var (
-	encoderJSON encoder.Metrics
+	encoderJSON encoder.Encode
 )
 
 func SendMetrics(value any, name, endpoint string) {
@@ -22,7 +22,7 @@ func SendMetrics(value any, name, endpoint string) {
 	encoderJSON.ID = name
 	encoderJSON.MType = types
 	if encoderJSON.MType == "gauge" {
-		assertvalue, ok := value.(storage.Gauge)
+		assertvalue, ok := value.(float64)
 		if !ok {
 			log.Printf("conversion failed")
 		}

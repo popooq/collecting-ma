@@ -23,7 +23,6 @@ type (
 		MetricsCounter map[string]int64
 		mu             *sync.Mutex
 	}
-	Gauge   float64
 	Counter int64
 )
 
@@ -37,20 +36,21 @@ func NewMetricStorage() *MetricsStorage {
 
 func (ms *MetricsStorage) InsertMetric(name string, value float64) {
 	ms.mu.Lock()
+	defer ms.mu.Unlock()
 	ms.MetricsGauge[name] = value
-	ms.mu.Unlock()
+
 }
 
 func (ms *MetricsStorage) CountCounterMetric(name string, value int64) {
 	ms.mu.Lock()
+	defer ms.mu.Unlock()
 	ms.MetricsCounter[name] += value
-	ms.mu.Unlock()
 }
 
 func (ms *MetricsStorage) GetMetricGauge(name string) (float64, error) {
 	ms.mu.Lock()
+	defer ms.mu.Unlock()
 	value, ok := ms.MetricsGauge[name]
-	ms.mu.Unlock()
 	if ok {
 		return value, nil
 	} else {
@@ -61,8 +61,8 @@ func (ms *MetricsStorage) GetMetricGauge(name string) (float64, error) {
 
 func (ms *MetricsStorage) GetMetricJSONGauge(name string) (*float64, error) {
 	ms.mu.Lock()
+	defer ms.mu.Unlock()
 	value, ok := ms.MetricsGauge[name]
-	ms.mu.Unlock()
 	if ok {
 		return &value, nil
 	} else {
@@ -73,8 +73,8 @@ func (ms *MetricsStorage) GetMetricJSONGauge(name string) (*float64, error) {
 
 func (ms *MetricsStorage) GetMetricCounter(name string) (int64, error) {
 	ms.mu.Lock()
+	defer ms.mu.Unlock()
 	value, ok := ms.MetricsCounter[name]
-	ms.mu.Unlock()
 	if ok {
 		return value, nil
 	} else {
@@ -85,8 +85,8 @@ func (ms *MetricsStorage) GetMetricCounter(name string) (int64, error) {
 
 func (ms *MetricsStorage) GetMetricJSONCounter(name string) (*int64, error) {
 	ms.mu.Lock()
+	defer ms.mu.Unlock()
 	uvalue, ok := ms.MetricsCounter[name]
-	ms.mu.Unlock()
 	if ok {
 		value := int64(uvalue)
 		return &value, nil
@@ -97,8 +97,8 @@ func (ms *MetricsStorage) GetMetricJSONCounter(name string) (*int64, error) {
 }
 func (ms *MetricsStorage) GetAllMetrics() []string {
 	ms.mu.Lock()
+	defer ms.mu.Unlock()
 	allMetrics := []string{}
-	ms.mu.Unlock()
 	for k, v := range ms.MetricsGauge {
 		metric := fmt.Sprintf("%s - %.3f", k, v)
 		allMetrics = append(allMetrics, metric)
@@ -112,12 +112,12 @@ func (ms *MetricsStorage) GetAllMetrics() []string {
 
 func (ms *MetricsStorage) GetBackupCounter(id string, delta int64) {
 	ms.mu.Lock()
+	defer ms.mu.Unlock()
 	ms.MetricsCounter[id] = delta
-	ms.mu.Unlock()
 }
 
 func (ms *MetricsStorage) GetBackupGauge(id string, value float64) {
 	ms.mu.Lock()
+	defer ms.mu.Unlock()
 	ms.MetricsGauge[id] = value
-	ms.mu.Unlock()
 }

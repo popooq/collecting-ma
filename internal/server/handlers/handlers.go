@@ -10,14 +10,14 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
-	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
 type (
 	MetricStorage struct {
 		storage *storage.MetricsStorage
-		encoder *encoder.Metrics
+		encoder *encoder.Encode
 	}
 	gzipWriter struct {
 		http.ResponseWriter
@@ -25,7 +25,7 @@ type (
 	}
 )
 
-func NewMetricStorage(stor *storage.MetricsStorage, encoder *encoder.Metrics) MetricStorage {
+func NewMetricStorage(stor *storage.MetricsStorage, encoder *encoder.Encode) MetricStorage {
 	return MetricStorage{
 		storage: stor,
 		encoder: encoder}

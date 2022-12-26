@@ -7,9 +7,9 @@ import (
 	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/server/handlers"
 	"github.com/popooq/collectimg-ma/internal/server/router"
+	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/backuper"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
-	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
 func main() {
@@ -27,7 +27,10 @@ func main() {
 		if err != nil {
 			log.Printf("error during create new loader %s", err)
 		}
-		loader.LoadFromFile()
+		err = loader.LoadFromFile()
+		if err != nil {
+			log.Printf("error during load from file %s", err)
+		}
 	}
 	go safe.Saver()
 	log.Fatal(http.ListenAndServe(cfg.Address, handlers.GzipHandler(r)))

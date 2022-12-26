@@ -3,31 +3,30 @@ package backuper
 import (
 	"bufio"
 	"encoding/json"
+	"io"
 	"log"
 	"os"
 	"time"
 
 	"github.com/popooq/collectimg-ma/internal/server/config"
+	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
-	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
 type Backuper struct {
 	storage *storage.MetricsStorage
 	cfg     *config.Config
-	enc     *encoder.Metrics
+	enc     *encoder.Encode
 
 	file   *os.File
 	writer *bufio.Writer
 }
 
-func NewSaver(storage *storage.MetricsStorage, cfg *config.Config, enc *encoder.Metrics) (*Backuper, error) {
+func NewSaver(storage *storage.MetricsStorage, cfg *config.Config, enc *encoder.Encode) (*Backuper, error) {
 	file, err := os.OpenFile(cfg.Storefile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
 	if err != nil {
-		log.Printf("error during opening file: %s", err)
 		return nil, err
 	}
-	log.Printf("sucsessifuly open file: %s", cfg.Storefile)
 	return &Backuper{
 		storage: storage,
 		cfg:     cfg,
@@ -41,19 +40,17 @@ func NewSaver(storage *storage.MetricsStorage, cfg *config.Config, enc *encoder.
 type Loader struct {
 	storage *storage.MetricsStorage
 	cfg     *config.Config
-	encoder *encoder.Metrics
+	encoder *encoder.Encode
 
 	file   *os.File
 	reader *bufio.Reader
 }
 
-func NewLoader(storage *storage.MetricsStorage, cfg *config.Config, encoder *encoder.Metrics) (*Loader, error) {
+func NewLoader(storage *storage.MetricsStorage, cfg *config.Config, encoder *encoder.Encode) (*Loader, error) {
 	file, err := os.OpenFile(cfg.Storefile, os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {
-		log.Printf("error during opening file: %s", err)
 		return nil, err
 	}
-	log.Printf("sucsessifuly open file: %s", cfg.Storefile)
 	return &Loader{
 		storage: storage,
 		cfg:     cfg,
@@ -77,12 +74,10 @@ func (s *Backuper) SaveToFile() error {
 
 		data, err := s.enc.Marshall()
 		if err != nil {
-			log.Printf("error during marchalling: %s", err)
 			return err
 		}
 		_, err = s.writer.Write(data)
 		if err != nil {
-			log.Printf("error duriong writing: %s", err)
 			return err
 		}
 		err = s.writer.WriteByte('\n')
@@ -98,12 +93,10 @@ func (s *Backuper) SaveToFile() error {
 
 		data, err := s.enc.Marshall()
 		if err != nil {
-			log.Printf("error during marchalling: %s", err)
 			return err
 		}
 		_, err = s.writer.Write(data)
 		if err != nil {
-			log.Printf("error duriong writing: %s", err)
 			return err
 		}
 		err = s.writer.WriteByte('\n')
@@ -121,7 +114,6 @@ func (s *Backuper) Saver() error {
 		<-tickerstore.C
 		err := s.SaveToFile()
 		if err != nil {
-			log.Printf("error during savihng: %s", err)
 			return err
 		}
 	}
@@ -131,25 +123,21 @@ func (l *Loader) Close() error {
 	return l.file.Close()
 }
 
-func (l *Loader) LoadFromFile() ([]byte, error) {
-
-	for {
-		data, err := l.reader.ReadBytes('\n')
-		if err != nil {
-			log.Printf("error during read file: %s", err)
-			return nil, err
-		}
-		log.Printf("data %s", data)
-		err = json.Unmarshal(data, l.encoder)
-		if err != nil {
-			log.Printf("error during unmarshalling: %s", err)
-			return nil, err
-		}
-		switch l.encoder.MType {
-		case "gauge":
-			l.storage.GetBackupGauge(l.encoder.ID, *l.encoder.Value)
-		case "counter":
-			l.storage.GetBackupCounter(l.encoder.ID, *l.encoder.Delta)
-		}
+func (l *Loader) LoadFromFile() error {
+	data, err := io.ReadAll(l.reader)
+	if err != nil {
+		return err
 	}
+	log.Printf("data %s", data)
+	err = json.Unmarshal(data, l.encoder)
+	if err != nil {
+		return err
+	}
+	switch l.encoder.MType {
+	case "gauge":
+		l.storage.GetBackupGauge(l.encoder.ID, *l.encoder.Value)
+	case "counter":
+		l.storage.GetBackupCounter(l.encoder.ID, *l.encoder.Delta)
+	}
+	return nil
 }
