@@ -66,6 +66,8 @@ func (s *Backuper) Close() error {
 }
 
 func (s *Backuper) SaveToFile() error {
+	s.file.Truncate(0)
+	_ = s.writer.WriteByte('[')
 	for k, v := range s.storage.MetricsGauge {
 		s.enc.ID = k
 		s.enc.MType = "gauge"
@@ -77,6 +79,10 @@ func (s *Backuper) SaveToFile() error {
 			return err
 		}
 		_, err = s.writer.Write(data)
+		if err != nil {
+			return err
+		}
+		err = s.writer.WriteByte(',')
 		if err != nil {
 			return err
 		}
@@ -104,6 +110,7 @@ func (s *Backuper) SaveToFile() error {
 			return err
 		}
 	}
+	_ = s.writer.WriteByte(']')
 	log.Printf("new backup created")
 	return s.writer.Flush()
 }
@@ -124,20 +131,27 @@ func (l *Loader) Close() error {
 }
 
 func (l *Loader) LoadFromFile() error {
+	var data []byte
 	data, err := io.ReadAll(l.reader)
 	if err != nil {
+
+		log.Printf("erad err : %s", err)
 		return err
 	}
 	log.Printf("data %s", data)
-	err = json.Unmarshal(data, l.encoder)
+	var encoder []encoder.Encode
+	err = json.Unmarshal(data, &encoder)
 	if err != nil {
+		log.Printf("marshal err : %s", err)
 		return err
 	}
-	switch l.encoder.MType {
-	case "gauge":
-		l.storage.GetBackupGauge(l.encoder.ID, *l.encoder.Value)
-	case "counter":
-		l.storage.GetBackupCounter(l.encoder.ID, *l.encoder.Delta)
+	for _, v := range encoder {
+		switch v.MType {
+		case "gauge":
+			l.storage.GetBackupGauge(v.ID, *v.Value)
+		case "counter":
+			l.storage.GetBackupCounter(v.ID, *v.Delta)
+		}
 	}
 	return nil
 }
