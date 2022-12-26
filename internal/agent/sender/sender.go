@@ -21,7 +21,7 @@ func SendMetrics(value any, name, endpoint string) {
 	types := strings.ToLower(strings.TrimPrefix(fmt.Sprintf("%T", value), "storage."))
 	encoderJSON.ID = name
 	encoderJSON.MType = types
-	if encoderJSON.MType == "gauge" {
+	if encoderJSON.MType == "float64" {
 		assertvalue, ok := value.(float64)
 		if !ok {
 			log.Printf("conversion failed")
@@ -29,6 +29,7 @@ func SendMetrics(value any, name, endpoint string) {
 		floatvalue := float64(assertvalue)
 		encoderJSON.Value = &floatvalue
 		encoderJSON.Delta = nil
+		encoderJSON.MType = "gauge"
 	}
 	if encoderJSON.MType == "counter" {
 		assertdelta, ok := value.(storage.Counter)
