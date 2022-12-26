@@ -105,12 +105,16 @@ func (s *Backuper) SaveToFile() error {
 		if err != nil {
 			return err
 		}
+		err = s.writer.WriteByte(',')
+		if err != nil {
+			return err
+		}
 		err = s.writer.WriteByte('\n')
 		if err != nil {
 			return err
 		}
 	}
-	_ = s.writer.WriteByte(']')
+	_, _ = s.writer.WriteString("{}]")
 	log.Printf("new backup created")
 	return s.writer.Flush()
 }
@@ -134,11 +138,9 @@ func (l *Loader) LoadFromFile() error {
 	var data []byte
 	data, err := io.ReadAll(l.reader)
 	if err != nil {
-
 		log.Printf("erad err : %s", err)
 		return err
 	}
-	log.Printf("data %s", data)
 	var encoder []encoder.Encode
 	err = json.Unmarshal(data, &encoder)
 	if err != nil {
