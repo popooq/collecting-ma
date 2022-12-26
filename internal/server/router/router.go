@@ -6,30 +6,34 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/popooq/collectimg-ma/internal/server/handlers"
-	"github.com/popooq/collectimg-ma/internal/utils/storage"
 )
 
-func NewRouter() chi.Router {
-	memS := storage.NewMemStorage()
-	handler := handlers.NewMetricStorage(memS)
+func NewRouter(handler handlers.MetricStorage) chi.Router {
 
-	r := chi.NewRouter()
+	router := chi.NewRouter()
 
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
+	router.Use(middleware.RequestID)
+	router.Use(middleware.RealIP)
+	router.Use(middleware.Logger)
+	router.Use(middleware.Recoverer)
+	//	router.Use(middleware.Compress(5, "text/plain", "application/json"))
 
-	r.Route("/", func(r chi.Router) {
-		r.Post("/update/{mType}/{mName}/{mValue}", func(w http.ResponseWriter, r *http.Request) {
-			handler.ServeHTTP(w, r)
+	router.Route("/", func(router chi.Router) {
+		router.Post("/update/{mType}/{mName}/{mValue}", func(w http.ResponseWriter, r *http.Request) {
+			handler.CollectMetrics(w, r)
 		})
-		r.Get("/value/{mType}/{mName}", func(w http.ResponseWriter, r *http.Request) {
+		router.Get("/value/{mType}/{mName}", func(w http.ResponseWriter, r *http.Request) {
 			handler.MetricValue(w, r)
 		})
-		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		router.Post("/update/", func(w http.ResponseWriter, r *http.Request) {
+			handler.CollectJSONMetric(w, r)
+		})
+		router.Post("/value/", func(w http.ResponseWriter, r *http.Request) {
+			handler.MetricJSONValue(w, r)
+		})
+		router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			handler.AllMetrics(w, r)
 		})
 	})
-	return r
+	return router
 }

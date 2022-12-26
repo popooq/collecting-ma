@@ -5,15 +5,17 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
-	"github.com/popooq/collectimg-ma/internal/utils/storage"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/popooq/collectimg-ma/internal/storage"
+	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 )
 
 func NewRouter() chi.Router {
 
-	MemS := storage.NewMemStorage()
-	handler := NewMetricStorage(MemS)
+	MemS := storage.NewMetricStorage()
+	metricStruct := encoder.NewEncoderMetricsStruct()
+	handler := NewMetricStorage(MemS, metricStruct)
 
 	MemS.InsertMetric("Alloc", 123.000)
 	MemS.CountCounterMetric("PollCount", 34)
@@ -27,7 +29,7 @@ func NewRouter() chi.Router {
 
 	r.Route("/", func(r chi.Router) {
 		r.Post("/update/{mType}/{mName}/{mValue}", func(w http.ResponseWriter, r *http.Request) {
-			handler.ServeHTTP(w, r)
+			handler.CollectMetrics(w, r)
 		})
 		r.Get("/value/{mType}/{mName}", func(w http.ResponseWriter, r *http.Request) {
 			handler.MetricValue(w, r)
