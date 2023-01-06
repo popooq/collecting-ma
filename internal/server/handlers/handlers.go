@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 	"github.com/popooq/collectimg-ma/internal/utils/hasher"
@@ -20,7 +19,7 @@ type (
 	MetricStorage struct {
 		storage *storage.MetricsStorage
 		encoder *encoder.Encode
-		cfg     *config.Config
+		key     string
 	}
 	gzipWriter struct {
 		http.ResponseWriter
@@ -28,11 +27,11 @@ type (
 	}
 )
 
-func NewMetricStorage(stor *storage.MetricsStorage, encoder *encoder.Encode, config *config.Config) MetricStorage {
+func NewMetricStorage(stor *storage.MetricsStorage, encoder *encoder.Encode, key string) MetricStorage {
 	return MetricStorage{
 		storage: stor,
 		encoder: encoder,
-		cfg:     config}
+		key:     key}
 }
 
 func (ms MetricStorage) CollectMetrics(w http.ResponseWriter, r *http.Request) {
@@ -136,8 +135,8 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if ms.cfg.Key != "" {
-		ms.encoder.Hash, err = hasher.Hasher(*ms.encoder, ms.cfg.Key)
+	if ms.key != "" {
+		ms.encoder.Hash, err = hasher.Hasher(*ms.encoder, ms.key)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -186,8 +185,8 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if ms.cfg.Key != "" {
-		ms.encoder.Hash, err = hasher.Hasher(*ms.encoder, ms.cfg.Key)
+	if ms.key != "" {
+		ms.encoder.Hash, err = hasher.Hasher(*ms.encoder, ms.key)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return

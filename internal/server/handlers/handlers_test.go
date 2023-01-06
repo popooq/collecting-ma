@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 )
@@ -16,8 +15,7 @@ func NewRouter() chi.Router {
 
 	MemS := storage.NewMetricStorage()
 	metricStruct := encoder.NewEncoderMetricsStruct()
-	cfg := config.NewServerConfig()
-	handler := NewMetricStorage(MemS, metricStruct, cfg)
+	handler := NewMetricStorage(MemS, metricStruct, "")
 
 	MemS.InsertMetric("Alloc", 123.000)
 	MemS.CountCounterMetric("PollCount", 34)
