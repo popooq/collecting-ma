@@ -16,7 +16,7 @@ func main() {
 	storage := storage.NewMetricStorage()
 	encoder := encoder.NewEncoderMetricsStruct()
 	cfg := config.NewServerConfig()
-	handler := handlers.NewMetricStorage(storage, encoder, cfg)
+	handler := handlers.NewMetricStorage(storage, encoder, cfg.Key)
 	r := router.NewRouter(handler)
 	safe, err := backuper.NewSaver(storage, cfg, encoder)
 	if err != nil {
