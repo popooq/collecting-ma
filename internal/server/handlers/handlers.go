@@ -135,11 +135,15 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
-	ms.encoder.Hash, err = hasher.Hasher(*ms.encoder, ms.cfg.Key)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+
+	if ms.cfg.Key != "" {
+		ms.encoder.Hash, err = hasher.Hasher(*ms.encoder, ms.cfg.Key)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	err = ms.encoder.Encode(w)
@@ -181,11 +185,15 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
-	ms.encoder.Hash, err = hasher.Hasher(*ms.encoder, ms.cfg.Key)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+
+	if ms.cfg.Key != "" {
+		ms.encoder.Hash, err = hasher.Hasher(*ms.encoder, ms.cfg.Key)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
 	}
+
 	w.WriteHeader(http.StatusOK)
 	err = ms.encoder.Encode(w)
 	if err != nil {
