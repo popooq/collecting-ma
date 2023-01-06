@@ -11,13 +11,11 @@ import (
 
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
+	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
 
-var (
-	encoderJSON encoder.Encode
-)
-
-func SendMetrics(value any, name, endpoint string) {
+func SendMetrics(value any, name, endpoint, key string) {
+	var encoderJSON encoder.Encode
 	types := strings.ToLower(strings.TrimPrefix(fmt.Sprintf("%T", value), "storage."))
 	encoderJSON.ID = name
 	encoderJSON.MType = types
@@ -39,6 +37,13 @@ func SendMetrics(value any, name, endpoint string) {
 		intdelta := int64(assertdelta)
 		encoderJSON.Delta = &intdelta
 		encoderJSON.Value = nil
+	}
+	if key != "" {
+		hash, err := hasher.Hasher(encoderJSON, key)
+		if err != nil {
+			log.Printf("something went wrong %s", err)
+		}
+		encoderJSON.Hash = hash
 	}
 	body, err := encoderJSON.Marshall()
 	if err != nil {

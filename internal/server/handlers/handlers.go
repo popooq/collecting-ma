@@ -10,14 +10,17 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
+	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
 
 type (
 	MetricStorage struct {
 		storage *storage.MetricsStorage
 		encoder *encoder.Encode
+		cfg     *config.Config
 	}
 	gzipWriter struct {
 		http.ResponseWriter
@@ -25,10 +28,11 @@ type (
 	}
 )
 
-func NewMetricStorage(stor *storage.MetricsStorage, encoder *encoder.Encode) MetricStorage {
+func NewMetricStorage(stor *storage.MetricsStorage, encoder *encoder.Encode, config *config.Config) MetricStorage {
 	return MetricStorage{
 		storage: stor,
-		encoder: encoder}
+		encoder: encoder,
+		cfg:     config}
 }
 
 func (ms MetricStorage) CollectMetrics(w http.ResponseWriter, r *http.Request) {
@@ -131,7 +135,11 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
-
+	ms.encoder.Hash, err = hasher.Hasher(*ms.encoder, ms.cfg.Key)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	err = ms.encoder.Encode(w)
@@ -173,7 +181,11 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
-
+	ms.encoder.Hash, err = hasher.Hasher(*ms.encoder, ms.cfg.Key)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 	err = ms.encoder.Encode(w)
 	if err != nil {

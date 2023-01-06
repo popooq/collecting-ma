@@ -15,9 +15,9 @@ import (
 func main() {
 	storage := storage.NewMetricStorage()
 	encoder := encoder.NewEncoderMetricsStruct()
-	handler := handlers.NewMetricStorage(storage, encoder)
-	r := router.NewRouter(handler)
 	cfg := config.NewServerConfig()
+	handler := handlers.NewMetricStorage(storage, encoder, cfg)
+	r := router.NewRouter(handler)
 	safe, err := backuper.NewSaver(storage, cfg, encoder)
 	if err != nil {
 		log.Printf("error during create new saver %s", err)
