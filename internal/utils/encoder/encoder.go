@@ -60,10 +60,6 @@ func (m *Encode) Hasher(key string) (string, error) {
 	h.Write([]byte(src))
 	hash := fmt.Sprintf("%x", h.Sum(nil))
 
-	if m.Hash != "" && !hmac.Equal([]byte(m.Hash), []byte(hash)) {
-		return "", fmt.Errorf("not equal m.hash %x and hash %x", []byte(m.Hash), []byte(hash))
-	}
-
 	return hash, nil
 }
 
