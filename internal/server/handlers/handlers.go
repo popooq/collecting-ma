@@ -12,7 +12,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
-	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
 
 type (
@@ -139,7 +138,13 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 	log.Printf("prev hash: %s", ms.encoder.Hash)
 	if ms.key != "" {
 		log.Printf("key: %s", ms.key)
-		ms.encoder.Hash, err = hasher.Hasher(*ms.encoder, ms.key)
+		ms.encoder.Hash, err = ms.encoder.Hasher(ms.key)
+		if err != nil {
+			log.Printf("error :%s", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		err = ms.encoder.HashChecker(ms.encoder.Hash)
 		if err != nil {
 			log.Printf("error :%s", err)
 			w.WriteHeader(http.StatusBadRequest)
@@ -191,7 +196,7 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if ms.key != "" {
-		ms.encoder.Hash, err = hasher.Hasher(*ms.encoder, ms.key)
+		err = ms.encoder.HashChecker(ms.encoder.Hash)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("error : %s", err), http.StatusBadRequest)
 			return

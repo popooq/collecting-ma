@@ -11,7 +11,6 @@ import (
 
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
-	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
 
 func SendMetrics(value any, name, endpoint, key string) {
@@ -39,7 +38,7 @@ func SendMetrics(value any, name, endpoint, key string) {
 		encoderJSON.Value = nil
 	}
 	if key != "" {
-		hash, err := hasher.Hasher(encoderJSON, key)
+		hash, err := encoderJSON.Hasher(key)
 		if err != nil {
 			log.Printf("something went wrong %s", err)
 		}
