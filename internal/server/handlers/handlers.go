@@ -112,7 +112,6 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		log.Println("something goes wrong")
 	}
-	log.Printf(ms.encoder.MType)
 	switch {
 	case ms.encoder.MType == "gauge":
 		ms.storage.InsertMetric(ms.encoder.ID, *ms.encoder.Value)
@@ -122,6 +121,7 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
+		log.Printf("encoder.Delta :%f", *ms.encoder.Value)
 	case ms.encoder.MType == "counter":
 		ms.storage.CountCounterMetric(ms.encoder.ID, *ms.encoder.Delta)
 		ms.encoder.Delta, err = ms.storage.GetMetricJSONCounter(ms.encoder.ID)
@@ -130,17 +130,22 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
+		log.Printf("encoder.Value :%d", *ms.encoder.Delta)
 	default:
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
 
+	log.Printf("prev hash: %s", ms.encoder.Hash)
 	if ms.key != "" {
+		log.Printf("key: %s", ms.key)
 		ms.encoder.Hash, err = hasher.Hasher(*ms.encoder, ms.key)
 		if err != nil {
+			log.Printf("error :%s", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+		log.Printf("current hash: %s", ms.encoder.Hash)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

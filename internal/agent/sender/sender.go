@@ -45,6 +45,7 @@ func SendMetrics(value any, name, endpoint, key string) {
 		}
 		encoderJSON.Hash = hash
 	}
+	log.Printf("struct : %+v", encoderJSON)
 	body, err := encoderJSON.Marshall()
 	if err != nil {
 		log.Printf("error %s in agent", err)

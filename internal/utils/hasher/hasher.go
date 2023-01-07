@@ -4,6 +4,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"fmt"
+	"log"
 
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 )
@@ -13,8 +14,10 @@ func Hasher(m encoder.Encode, key string) (string, error) {
 	switch m.MType {
 	case "gauge":
 		src = fmt.Sprintf("%s:gauge:%f", m.ID, *m.Value)
+		log.Printf("src: %s", src)
 	case "counter":
 		src = fmt.Sprintf("%s:counter:%d", m.ID, *m.Delta)
+		log.Printf("src: %s", src)
 	}
 
 	bkey := []byte(key)
