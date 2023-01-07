@@ -193,7 +193,7 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 	if ms.key != "" {
 		ms.encoder.Hash, err = hasher.Hasher(*ms.encoder, ms.key)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
+			http.Error(w, fmt.Sprintf("error : %s", err), http.StatusBadRequest)
 			return
 		}
 	}
