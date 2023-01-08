@@ -112,6 +112,8 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		log.Println("something goes wrong")
 	}
+	ms.encoder.Hash = ms.hasher.Hasher(ms.encoder)
+	log.Printf("current hash: %s", ms.encoder.Hash)
 	switch {
 	case ms.encoder.MType == "gauge":
 		ms.storage.InsertMetric(ms.encoder.ID, *ms.encoder.Value)
@@ -133,8 +135,6 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
-	ms.encoder.Hash = ms.hasher.Hasher(ms.encoder)
-	log.Printf("current hash: %s", ms.encoder.Hash)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
