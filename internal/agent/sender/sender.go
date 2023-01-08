@@ -37,13 +37,11 @@ func SendMetrics(value any, name, endpoint, key string) {
 		encoderJSON.Delta = &intdelta
 		encoderJSON.Value = nil
 	}
-	if key != "" {
-		hash, err := encoderJSON.Hasher(key)
-		if err != nil {
-			log.Printf("something went wrong %s", err)
-		}
-		encoderJSON.Hash = hash
+	hash, err := encoderJSON.Hasher(key)
+	if err != nil {
+		log.Printf("something went wrong %s", err)
 	}
+	encoderJSON.Hash = hash
 	body, err := encoderJSON.Marshall()
 	if err != nil {
 		log.Printf("error %s in agent", err)

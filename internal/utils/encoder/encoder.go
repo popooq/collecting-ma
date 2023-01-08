@@ -45,6 +45,10 @@ func (m *Encode) Marshall() ([]byte, error) {
 
 func (m *Encode) Hasher(key string) (string, error) {
 	var src string
+
+	if key == "" {
+		return "", nil
+	}
 	switch m.MType {
 	case "counter":
 		src = fmt.Sprintf("%s:%s:%d", m.ID, m.MType, *m.Delta)
