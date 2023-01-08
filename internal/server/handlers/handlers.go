@@ -120,7 +120,6 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
-		log.Printf("encoder.Delta :%f", *ms.encoder.Value)
 	case ms.encoder.MType == "counter":
 		ms.storage.CountCounterMetric(ms.encoder.ID, *ms.encoder.Delta)
 		ms.encoder.Delta, err = ms.storage.GetMetricJSONCounter(ms.encoder.ID)
@@ -129,15 +128,11 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
-		log.Printf("encoder.Value :%d", *ms.encoder.Delta)
 	default:
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
-
-	log.Printf("prev hash: %s", ms.encoder.Hash)
 	if ms.key != "" {
-		log.Printf("key: %s", ms.key)
 		ms.encoder.Hash, err = ms.encoder.Hasher(ms.key)
 		if err != nil {
 			log.Printf("error :%s", err)
@@ -196,7 +191,7 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if ms.key != "" {
-		_, err := ms.encoder.Hasher(ms.key)
+		err = ms.encoder.HashChecker(ms.encoder.Hash)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("error : %s", err), http.StatusBadRequest)
 			return
