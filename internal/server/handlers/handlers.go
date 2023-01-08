@@ -12,13 +12,14 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
+	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
 
 type (
 	MetricStorage struct {
 		storage *storage.MetricsStorage
 		encoder *encoder.Encode
-		key     string
+		hasher  *hasher.Hash
 	}
 	gzipWriter struct {
 		http.ResponseWriter
@@ -26,11 +27,11 @@ type (
 	}
 )
 
-func NewMetricStorage(stor *storage.MetricsStorage, encoder *encoder.Encode, key string) MetricStorage {
+func NewMetricStorage(stor *storage.MetricsStorage, encoder *encoder.Encode, hasher *hasher.Hash) MetricStorage {
 	return MetricStorage{
 		storage: stor,
 		encoder: encoder,
-		key:     key}
+		hasher:  hasher}
 }
 
 func (ms MetricStorage) CollectMetrics(w http.ResponseWriter, r *http.Request) {
@@ -132,21 +133,19 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
-	if ms.key != "" {
-		ms.encoder.Hash, err = ms.encoder.Hasher(ms.key)
-		if err != nil {
-			log.Printf("error: %s in %s metric", err, ms.encoder.ID)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		// err = ms.encoder.HashChecker(ms.encoder.Hash)
-		// if err != nil {
-		// 	log.Printf("error :%s", err)
-		// 	w.WriteHeader(http.StatusBadRequest)
-		// 	return
-		// }
-		log.Printf("current hash: %s", ms.encoder.Hash)
+	ms.encoder.Hash, err = ms.hasher.Hasher(ms.encoder)
+	if err != nil {
+		log.Printf("error: %s in %s metric", err, ms.encoder.ID)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
+	// err = ms.encoder.HashChecker(ms.encoder.Hash)
+	// if err != nil {
+	// 	log.Printf("error :%s", err)
+	// 	w.WriteHeader(http.StatusBadRequest)
+	// 	return
+	// }
+	log.Printf("current hash: %s", ms.encoder.Hash)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -190,12 +189,10 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if ms.key != "" {
-		err = ms.encoder.HashChecker(ms.encoder.Hash)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("error : %s", err), http.StatusBadRequest)
-			return
-		}
+	err = ms.hasher.HashChecker(ms.encoder.Hash, *ms.encoder)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error : %s", err), http.StatusBadRequest)
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)

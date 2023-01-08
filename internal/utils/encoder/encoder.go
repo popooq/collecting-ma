@@ -1,10 +1,7 @@
 package encoder
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
 	"encoding/json"
-	"fmt"
 	"io"
 )
 
@@ -41,38 +38,4 @@ func (m *Encode) Encode(body io.Writer) error {
 
 func (m *Encode) Marshall() ([]byte, error) {
 	return json.Marshal(m)
-}
-
-func (m *Encode) Hasher(key string) (string, error) {
-	var src string
-
-	if key == "" {
-		return "", nil
-	}
-	switch m.MType {
-	case "counter":
-		src = fmt.Sprintf("%s:%s:%d", m.ID, m.MType, *m.Delta)
-	case "gauge":
-		src = fmt.Sprintf("%s:%s:%f", m.ID, m.MType, *m.Value)
-	}
-
-	bkey := []byte(key)
-	h := hmac.New(sha256.New, bkey)
-	_, err := h.Write([]byte(src))
-	if err != nil {
-		return "", err
-	}
-	hash := fmt.Sprintf("%x", h.Sum(nil))
-	// if m.Hash != "" && !hmac.Equal([]byte(m.Hash), []byte(hash)) {
-	// 	return "", fmt.Errorf("not equal m.hash %x and hash %x", []byte(m.Hash), []byte(hash))
-	// }
-
-	return hash, nil
-}
-
-func (m *Encode) HashChecker(hash string) error {
-	if m.Hash != "" && !hmac.Equal([]byte(m.Hash), []byte(hash)) {
-		return fmt.Errorf("not equal m.hash %x and hash %x", []byte(m.Hash), []byte(hash))
-	}
-	return nil
 }

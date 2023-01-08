@@ -10,13 +10,15 @@ import (
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/backuper"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
+	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
 
 func main() {
 	storage := storage.NewMetricStorage()
 	encoder := encoder.NewEncoderMetricsStruct()
 	cfg := config.NewServerConfig()
-	handler := handlers.NewMetricStorage(storage, encoder, cfg.Key)
+	hasher := hasher.MewHash(cfg.Key)
+	handler := handlers.NewMetricStorage(storage, encoder, hasher)
 	r := router.NewRouter(handler)
 	safe, err := backuper.NewSaver(storage, cfg, encoder)
 	if err != nil {

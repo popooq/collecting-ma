@@ -11,9 +11,19 @@ import (
 
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
+	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
 
-func SendMetrics(value any, name, endpoint, key string) {
+type Sender struct {
+	hasher *hasher.Hash
+}
+
+func NewSender(hasher *hasher.Hash) Sender {
+	return Sender{
+		hasher: hasher,
+	}
+}
+func (s *Sender) SendMetrics(value any, name, endpoint, key string) {
 	var encoderJSON encoder.Encode
 	types := strings.ToLower(strings.TrimPrefix(fmt.Sprintf("%T", value), "storage."))
 	encoderJSON.ID = name
@@ -37,7 +47,7 @@ func SendMetrics(value any, name, endpoint, key string) {
 		encoderJSON.Delta = &intdelta
 		encoderJSON.Value = nil
 	}
-	hash, err := encoderJSON.Hasher(key)
+	hash, err := s.hasher.Hasher(&encoderJSON)
 	if err != nil {
 		log.Printf("something went wrong %s", err)
 	}

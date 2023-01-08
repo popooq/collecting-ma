@@ -9,13 +9,15 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
+	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
 
 func NewRouter() chi.Router {
 
 	MemS := storage.NewMetricStorage()
 	metricStruct := encoder.NewEncoderMetricsStruct()
-	handler := NewMetricStorage(MemS, metricStruct, "")
+	hasher := hasher.MewHash("")
+	handler := NewMetricStorage(MemS, metricStruct, hasher)
 
 	MemS.InsertMetric("Alloc", 123.000)
 	MemS.CountCounterMetric("PollCount", 34)
