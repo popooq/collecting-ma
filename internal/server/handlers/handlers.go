@@ -133,18 +133,7 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
-	ms.encoder.Hash, err = ms.hasher.Hasher(ms.encoder)
-	if err != nil {
-		log.Printf("error: %s in %s metric", err, ms.encoder.ID)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	// err = ms.encoder.HashChecker(ms.encoder.Hash)
-	// if err != nil {
-	// 	log.Printf("error :%s", err)
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	return
-	// }
+	ms.encoder.Hash = ms.hasher.Hasher(ms.encoder)
 	log.Printf("current hash: %s", ms.encoder.Hash)
 
 	w.Header().Set("Content-Type", "application/json")

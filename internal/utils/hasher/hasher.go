@@ -18,26 +18,20 @@ func MewHash(key string) *Hash {
 	}
 }
 
-func (h *Hash) Hasher(m *encoder.Encode) (string, error) {
-	var src string
-
-	if h.Key == nil {
-		return "", nil
+func (hash *Hash) Hasher(m *encoder.Encode) string {
+	var data string
+	if hash.Key == nil {
+		return ""
 	}
 	switch m.MType {
 	case "counter":
-		src = fmt.Sprintf("%s:%s:%d", m.ID, m.MType, *m.Delta)
+		data = fmt.Sprintf("%s:%s:%d", m.ID, m.MType, *m.Delta)
 	case "gauge":
-		src = fmt.Sprintf("%s:%s:%f", m.ID, m.MType, *m.Value)
+		data = fmt.Sprintf("%s:%s:%f", m.ID, m.MType, *m.Value)
 	}
-
-	hmac := hmac.New(sha256.New, h.Key)
-	_, err := hmac.Write([]byte(src))
-	if err != nil {
-		return "", err
-	}
-	hash := fmt.Sprintf("%x", hmac.Sum(nil))
-	return hash, nil
+	h := hmac.New(sha256.New, hash.Key)
+	h.Write([]byte(data))
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 func (h *Hash) HashChecker(hash string, m encoder.Encode) error {
