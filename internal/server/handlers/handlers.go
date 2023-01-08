@@ -135,7 +135,7 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 	if ms.key != "" {
 		ms.encoder.Hash, err = ms.encoder.Hasher(ms.key)
 		if err != nil {
-			log.Printf("error :%s", err)
+			log.Printf("error: %s in %s metric", err, ms.encoder.ID)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
