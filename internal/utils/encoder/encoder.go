@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 )
 
 type Encode struct {
@@ -49,10 +48,10 @@ func (m *Encode) Hasher(key string) (string, error) {
 	switch m.MType {
 	case "counter":
 		src = fmt.Sprintf("%s:%s:%d", m.ID, m.MType, *m.Delta)
-		log.Printf("src: %s", src)
+	//	log.Printf("src: %s", src)
 	case "gauge":
 		src = fmt.Sprintf("%s:%s:%f", m.ID, m.MType, *m.Value)
-		log.Printf("src: %s", src)
+		//	log.Printf("src: %s", src)
 	}
 
 	bkey := []byte(key)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"math/rand"
 	"runtime"
 	"time"
@@ -24,6 +25,7 @@ func main() {
 			runtime.ReadMemStats(&m)
 			c++
 		case <-tickerreport.C:
+			log.Printf("key: %s", cfg.Key)
 			sender.SendMetrics(storage.Counter(c), "PollCount", cfg.Address, cfg.Key)
 			sender.SendMetrics(float64(m.Alloc), "Alloc", cfg.Address, cfg.Key)
 			sender.SendMetrics(float64(m.BuckHashSys), "BuckHashSys", cfg.Address, cfg.Key)

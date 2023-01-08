@@ -28,7 +28,6 @@ func SendMetrics(value any, name, endpoint, key string) {
 		encoderJSON.Value = &floatvalue
 		encoderJSON.Delta = nil
 		encoderJSON.MType = "gauge"
-		log.Printf("Value: %f", *encoderJSON.Value)
 	case "counter":
 		assertdelta, ok := value.(storage.Counter)
 		if !ok {
@@ -37,7 +36,6 @@ func SendMetrics(value any, name, endpoint, key string) {
 		intdelta := int64(assertdelta)
 		encoderJSON.Delta = &intdelta
 		encoderJSON.Value = nil
-		log.Printf("Delta: %d", *encoderJSON.Delta)
 	}
 	if key != "" {
 		hash, err := encoderJSON.Hasher(key)
@@ -46,8 +44,6 @@ func SendMetrics(value any, name, endpoint, key string) {
 		}
 		encoderJSON.Hash = hash
 	}
-	//log.Printf("struct : %+v, key: %s", encoderJSON, key)
-	log.Printf("key: %s", key)
 	body, err := encoderJSON.Marshall()
 	if err != nil {
 		log.Printf("error %s in agent", err)
