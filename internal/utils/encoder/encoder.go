@@ -51,13 +51,16 @@ func (m *Encode) Hasher(key string) (string, error) {
 		src = fmt.Sprintf("%s:%s:%d", m.ID, m.MType, *m.Delta)
 		log.Printf("src: %s", src)
 	case "gauge":
-		src = fmt.Sprintf("%s:%s:%f", m.ID, m.MType, *m.Value)
+		src = fmt.Sprintf("%s:%s:%.f", m.ID, m.MType, *m.Value)
 		log.Printf("src: %s", src)
 	}
 
 	bkey := []byte(key)
 	h := hmac.New(sha256.New, bkey)
-	h.Write([]byte(src))
+	_, err := h.Write([]byte(src))
+	if err != nil {
+		return "", err
+	}
 	hash := fmt.Sprintf("%x", h.Sum(nil))
 
 	return hash, nil

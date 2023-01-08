@@ -18,7 +18,8 @@ func SendMetrics(value any, name, endpoint, key string) {
 	types := strings.ToLower(strings.TrimPrefix(fmt.Sprintf("%T", value), "storage."))
 	encoderJSON.ID = name
 	encoderJSON.MType = types
-	if encoderJSON.MType == "float64" {
+	switch encoderJSON.MType {
+	case "float64":
 		assertvalue, ok := value.(float64)
 		if !ok {
 			log.Printf("conversion failed")
@@ -27,8 +28,8 @@ func SendMetrics(value any, name, endpoint, key string) {
 		encoderJSON.Value = &floatvalue
 		encoderJSON.Delta = nil
 		encoderJSON.MType = "gauge"
-	}
-	if encoderJSON.MType == "counter" {
+		log.Printf("Value: %f", *encoderJSON.Value)
+	case "counter":
 		assertdelta, ok := value.(storage.Counter)
 		if !ok {
 			log.Printf("conversion failed")
@@ -36,6 +37,7 @@ func SendMetrics(value any, name, endpoint, key string) {
 		intdelta := int64(assertdelta)
 		encoderJSON.Delta = &intdelta
 		encoderJSON.Value = nil
+		log.Printf("Delta: %d", *encoderJSON.Delta)
 	}
 	if key != "" {
 		hash, err := encoderJSON.Hasher(key)
@@ -44,16 +46,18 @@ func SendMetrics(value any, name, endpoint, key string) {
 		}
 		encoderJSON.Hash = hash
 	}
-	log.Printf("struct : %+v", encoderJSON)
+	//log.Printf("struct : %+v, key: %s", encoderJSON, key)
+	log.Printf("key: %s", key)
 	body, err := encoderJSON.Marshall()
 	if err != nil {
 		log.Printf("error %s in agent", err)
 	}
+	requestBody := bytes.NewBuffer(body)
 	endpoint, err = url.JoinPath("http://", endpoint, "update/")
 	if err != nil {
 		log.Printf("url joining failed, error: %s", err)
 	}
-	resp, err := http.Post(endpoint, "application/json", bytes.NewBuffer(body))
+	resp, err := http.Post(endpoint, "application/json", requestBody)
 	if err != nil {
 		log.Printf("Server unreachible, error: %s", err)
 	} else {
