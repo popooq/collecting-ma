@@ -144,12 +144,12 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
-		err = ms.encoder.HashChecker(ms.encoder.Hash)
-		if err != nil {
-			log.Printf("error :%s", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+		// err = ms.encoder.HashChecker(ms.encoder.Hash)
+		// if err != nil {
+		// 	log.Printf("error :%s", err)
+		// 	w.WriteHeader(http.StatusBadRequest)
+		// 	return
+		// }
 		log.Printf("current hash: %s", ms.encoder.Hash)
 	}
 
