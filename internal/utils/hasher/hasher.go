@@ -18,9 +18,9 @@ func MewHash(key string) *Hash {
 	}
 }
 
-func (hash *Hash) Hasher(m *encoder.Encode) string {
+func (hsh *Hash) Hasher(m *encoder.Encode) string {
 	var data string
-	if hash.Key == nil {
+	if hsh.Key == nil {
 		return ""
 	}
 	switch m.MType {
@@ -29,12 +29,12 @@ func (hash *Hash) Hasher(m *encoder.Encode) string {
 	case "gauge":
 		data = fmt.Sprintf("%s:%s:%f", m.ID, m.MType, *m.Value)
 	}
-	h := hmac.New(sha256.New, hash.Key)
+	h := hmac.New(sha256.New, hsh.Key)
 	h.Write([]byte(data))
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-func (h *Hash) HashChecker(hash string, m encoder.Encode) error {
+func (hsh *Hash) HashChecker(hash string, m encoder.Encode) error {
 	if m.Hash != "" && !hmac.Equal([]byte(m.Hash), []byte(hash)) {
 		return fmt.Errorf("not equal m.hash %x and hash %x", []byte(m.Hash), []byte(hash))
 	}
