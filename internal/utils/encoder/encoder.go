@@ -51,7 +51,7 @@ func (m *Encode) Hasher(key string) (string, error) {
 		src = fmt.Sprintf("%s:%s:%d", m.ID, m.MType, *m.Delta)
 		log.Printf("src: %s", src)
 	case "gauge":
-		src = fmt.Sprintf("%s:%s:%.f", m.ID, m.MType, *m.Value)
+		src = fmt.Sprintf("%s:%s:%f", m.ID, m.MType, *m.Value)
 		log.Printf("src: %s", src)
 	}
 
