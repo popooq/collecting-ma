@@ -48,7 +48,13 @@ func (s *Sender) SendMetrics(value any, name, endpoint, key string) {
 		encoderJSON.Value = nil
 	}
 	hash := s.hasher.Hasher(&encoderJSON)
+	err := s.hasher.HashChecker(hash, encoderJSON)
+	if err != nil {
+		log.Printf("error: %s", err)
+	}
 	encoderJSON.Hash = hash
+
+	log.Printf("metric: %s, it's hash: %s", encoderJSON.ID, encoderJSON.Hash)
 	body, err := encoderJSON.Marshall()
 	if err != nil {
 		log.Printf("error %s in agent", err)
