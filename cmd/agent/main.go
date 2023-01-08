@@ -29,6 +29,7 @@ func main() {
 			c++
 		case <-tickerreport.C:
 			log.Printf("key: %s", cfg.Key)
+			random := float64(rand.Uint64())
 			sndr.SendMetrics(storage.Counter(c), "PollCount", cfg.Address, cfg.Key)
 			sndr.SendMetrics(float64(m.Alloc), "Alloc", cfg.Address, cfg.Key)
 			sndr.SendMetrics(float64(m.BuckHashSys), "BuckHashSys", cfg.Address, cfg.Key)
@@ -57,7 +58,8 @@ func main() {
 			sndr.SendMetrics(float64(m.StackSys), "StackSys", cfg.Address, cfg.Key)
 			sndr.SendMetrics(float64(m.Sys), "Sys", cfg.Address, cfg.Key)
 			sndr.SendMetrics(float64(m.TotalAlloc), "TotalAlloc", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(rand.Uint64()), "RandomValue", cfg.Address, cfg.Key)
+			sndr.SendMetrics(random, "RandomValue", cfg.Address, cfg.Key)
+			log.Printf("random value: %f", random)
 		}
 	}
 }
