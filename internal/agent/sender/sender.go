@@ -74,7 +74,7 @@ func (s *Sender) SendMetrics(value any, name, endpoint, key string) {
 	if err != nil {
 		log.Printf("url joining failed, error: %s", err)
 	}
-
+	log.Printf("json: %+v", encoderJSON)
 	resp, err := http.Post(endpoint, "application/json", requestBody)
 	if err != nil {
 		log.Printf("Server unreachible, error: %s", err)
