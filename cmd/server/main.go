@@ -34,6 +34,7 @@ func main() {
 			log.Printf("error during load from file %s", err)
 		}
 	}
+	log.Printf("key: %s", cfg.Key)
 	go safe.Saver()
 	log.Fatal(http.ListenAndServe(cfg.Address, handlers.GzipHandler(r)))
 }
