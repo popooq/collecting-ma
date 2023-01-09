@@ -41,7 +41,6 @@ func (s *Sender) SendMetrics(value any, name, endpoint, key string) {
 		floatvalue := float64(assertvalue)
 
 		encoderJSON.Value = &floatvalue
-		encoderJSON.Delta = nil
 		encoderJSON.MType = "gauge"
 	case "counter":
 		assertdelta, ok := value.(storage.Counter)
@@ -52,7 +51,6 @@ func (s *Sender) SendMetrics(value any, name, endpoint, key string) {
 		intdelta := int64(assertdelta)
 
 		encoderJSON.Delta = &intdelta
-		encoderJSON.Value = nil
 	}
 
 	hash := s.hasher.Hasher(&encoderJSON)
