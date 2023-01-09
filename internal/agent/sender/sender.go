@@ -25,16 +25,21 @@ func NewSender(hasher *hasher.Hash) Sender {
 }
 func (s *Sender) SendMetrics(value any, name, endpoint, key string) {
 	var encoderJSON encoder.Encode
+
 	types := strings.ToLower(strings.TrimPrefix(fmt.Sprintf("%T", value), "storage."))
+
 	encoderJSON.ID = name
 	encoderJSON.MType = types
+
 	switch encoderJSON.MType {
 	case "float64":
 		assertvalue, ok := value.(float64)
 		if !ok {
 			log.Printf("conversion failed")
 		}
+
 		floatvalue := float64(assertvalue)
+
 		encoderJSON.Value = &floatvalue
 		encoderJSON.Delta = nil
 		encoderJSON.MType = "gauge"
@@ -43,27 +48,35 @@ func (s *Sender) SendMetrics(value any, name, endpoint, key string) {
 		if !ok {
 			log.Printf("conversion failed")
 		}
+
 		intdelta := int64(assertdelta)
+
 		encoderJSON.Delta = &intdelta
 		encoderJSON.Value = nil
 	}
+
 	hash := s.hasher.Hasher(&encoderJSON)
 	err := s.hasher.HashChecker(hash, encoderJSON)
 	if err != nil {
 		log.Printf("error: %s", err)
 	}
+
 	encoderJSON.Hash = hash
 
 	log.Printf("metric: %s, it's hash: %s", encoderJSON.ID, encoderJSON.Hash)
+
 	body, err := encoderJSON.Marshall()
 	if err != nil {
 		log.Printf("error %s in agent", err)
 	}
+
 	requestBody := bytes.NewBuffer(body)
+
 	endpoint, err = url.JoinPath("http://", endpoint, "update/")
 	if err != nil {
 		log.Printf("url joining failed, error: %s", err)
 	}
+
 	resp, err := http.Post(endpoint, "application/json", requestBody)
 	if err != nil {
 		log.Printf("Server unreachible, error: %s", err)
