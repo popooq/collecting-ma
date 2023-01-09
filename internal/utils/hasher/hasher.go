@@ -26,9 +26,11 @@ func (hsh *Hash) Hasher(m *encoder.Encode) string {
 	}
 	switch m.MType {
 	case "counter":
+		log.Printf("Im in block counter %s, %s, %d", m.ID, m.MType, *m.Delta)
 		data = fmt.Sprintf("%s:%s:%d", m.ID, m.MType, *m.Delta)
 		log.Printf("data: %s", data)
 	case "gauge":
+		log.Printf("I'm in block gauge %s, %s, %f", m.ID, m.MType, *m.Value)
 		data = fmt.Sprintf("%s:%s:%f", m.ID, m.MType, *m.Value)
 		log.Printf("data: %s", data)
 	}
