@@ -110,9 +110,10 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 
 	err := ms.encoder.Decode(r.Body)
 	if err != nil {
-		log.Println("something went wrong")
+		log.Println("something went wrong while decode", err)
 	}
-	log.Printf("metrics: %+v", ms.encoder)
+	// log.Printf("metrics: %+v", ms.encoder)
+	// log.Printf("%s:%s:%f", ms.encoder.ID, ms.encoder.MType, *ms.encoder.Value)
 	switch {
 	case ms.encoder.MType == "gauge":
 		ms.storage.InsertMetric(ms.encoder.ID, *ms.encoder.Value)
@@ -137,7 +138,7 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 	}
 
 	ms.encoder.Hash = ms.hasher.Hasher(ms.encoder)
-	log.Printf("current hash: %s", ms.encoder.Hash)
+	//log.Printf("current hash: %s", ms.encoder.Hash)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -151,7 +152,7 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 
 	err := ms.encoder.Decode(r.Body)
 	if err != nil {
-		log.Println("something went wrong")
+		http.Error(w, fmt.Sprintln("something went wrong while decoding", err), http.StatusBadRequest)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -192,7 +193,7 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusOK)
 	err = ms.encoder.Encode(w)
 	if err != nil {
-		log.Println("something went wrong", err)
+		log.Println("something went wrong while encode", err)
 	}
 }
 

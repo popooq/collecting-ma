@@ -21,18 +21,19 @@ func MewHash(key string) *Hash {
 
 func (hsh *Hash) Hasher(m *encoder.Encode) string {
 	var data string
+	log.Printf("key: %x", hsh.Key)
 	if hsh.Key == nil {
 		return ""
 	}
 	switch m.MType {
 	case "counter":
-		log.Printf("Im in block counter %s, %s, %d", m.ID, m.MType, *m.Delta)
+		//	log.Printf("Im in block counter %s, %s, %d", m.ID, m.MType, *m.Delta)
 		data = fmt.Sprintf("%s:%s:%d", m.ID, m.MType, *m.Delta)
-		log.Printf("data: %s", data)
+		// log.Printf("data: %s", data)
 	case "gauge":
-		log.Printf("I'm in block gauge %s, %s, %f", m.ID, m.MType, *m.Value)
+		//	log.Printf("I'm in block gauge %s, %s, %f", m.ID, m.MType, *m.Value)
 		data = fmt.Sprintf("%s:%s:%f", m.ID, m.MType, *m.Value)
-		log.Printf("data: %s", data)
+		// log.Printf("data: %s", data)
 	}
 	h := hmac.New(sha256.New, hsh.Key)
 	h.Write([]byte(data))
