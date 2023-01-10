@@ -4,7 +4,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"fmt"
-	"log"
 
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 )
@@ -20,24 +19,25 @@ func MewHash(key string) *Hash {
 }
 
 func (hsh *Hash) Hasher(m *encoder.Encode) string {
+
 	var data string
-	log.Printf("key: %x", hsh.Key)
+
+	switch m.MType {
+	case "counter":
+		data = fmt.Sprintf("%s:%s:%d", m.ID, m.MType, *m.Delta)
+	case "gauge":
+		data = fmt.Sprintf("%s:%s:%f", m.ID, m.MType, *m.Value)
+	}
+
 	if hsh.Key == nil {
 		return ""
 	}
-	switch m.MType {
-	case "counter":
-		//	log.Printf("Im in block counter %s, %s, %d", m.ID, m.MType, *m.Delta)
-		data = fmt.Sprintf("%s:%s:%d", m.ID, m.MType, *m.Delta)
-		// log.Printf("data: %s", data)
-	case "gauge":
-		//	log.Printf("I'm in block gauge %s, %s, %f", m.ID, m.MType, *m.Value)
-		data = fmt.Sprintf("%s:%s:%f", m.ID, m.MType, *m.Value)
-		// log.Printf("data: %s", data)
-	}
+
 	h := hmac.New(sha256.New, hsh.Key)
 	h.Write([]byte(data))
-	return fmt.Sprintf("%x", h.Sum(nil))
+	hash := fmt.Sprintf("%x", h.Sum(nil))
+
+	return hash
 }
 
 func (hsh *Hash) HashChecker(hash string, m encoder.Encode) error {
