@@ -10,14 +10,16 @@ import (
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/backuper"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
+	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
 
 func main() {
 	storage := storage.NewMetricStorage()
 	encoder := encoder.NewEncoderMetricsStruct()
-	handler := handlers.NewMetricStorage(storage, encoder)
-	r := router.NewRouter(handler)
 	cfg := config.NewServerConfig()
+	hasher := hasher.MewHash(cfg.Key)
+	handler := handlers.NewMetricStorage(storage, encoder, hasher)
+	r := router.NewRouter(handler)
 	safe, err := backuper.NewSaver(storage, cfg, encoder)
 	if err != nil {
 		log.Printf("error during create new saver %s", err)
@@ -32,6 +34,7 @@ func main() {
 			log.Printf("error during load from file %s", err)
 		}
 	}
+	log.Printf("key: %s", cfg.Key)
 	go safe.Saver()
 	log.Fatal(http.ListenAndServe(cfg.Address, handlers.GzipHandler(r)))
 }
