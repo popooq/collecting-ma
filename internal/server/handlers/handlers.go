@@ -138,7 +138,7 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 	}
 
 	ms.encoder.Hash = ms.hasher.Hasher(ms.encoder)
-	//log.Printf("current hash: %s", ms.encoder.Hash)
+	log.Printf("current hash: %s", ms.encoder.Hash)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -189,6 +189,7 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, fmt.Sprintf("error : %s", err), http.StatusBadRequest)
 		return
 	}
+	log.Printf("Значение хеша после проверки чекером %s", ms.encoder.Hash)
 
 	w.WriteHeader(http.StatusOK)
 	err = ms.encoder.Encode(w)
