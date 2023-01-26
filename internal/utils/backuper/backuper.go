@@ -23,7 +23,7 @@ type Backuper struct {
 }
 
 func NewSaver(storage *storage.MetricsStorage, cfg *config.Config, enc *encoder.Encode) (*Backuper, error) {
-	file, err := os.OpenFile(cfg.Storefile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
+	file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +47,7 @@ type Loader struct {
 }
 
 func NewLoader(storage *storage.MetricsStorage, cfg *config.Config, encoder *encoder.Encode) (*Loader, error) {
-	file, err := os.OpenFile(cfg.Storefile, os.O_RDONLY|os.O_CREATE, 0777)
+	file, err := os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0777)
 	if err != nil {
 		return nil, err
 	}
