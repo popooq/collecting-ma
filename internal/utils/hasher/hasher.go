@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"log"
 
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 )
@@ -33,6 +34,8 @@ func (hsh *Hash) Hasher(m *encoder.Encode) string {
 	if hsh.Key == nil {
 		return ""
 	}
+
+	log.Printf("data во время хеширования: %s", data)
 
 	h := hmac.New(sha256.New, hsh.Key)
 	h.Write([]byte(data))
