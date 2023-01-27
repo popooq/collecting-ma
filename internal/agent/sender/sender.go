@@ -61,7 +61,7 @@ func (s *Sender) SendMetrics(value any, name, endpoint, key string) {
 
 	encoderJSON.Hash = hash
 
-	log.Printf("metric: %s, it's hash: %s", encoderJSON.ID, encoderJSON.Hash)
+	//log.Printf("metric: %s, it's hash: %s", encoderJSON.ID, encoderJSON.Hash)
 
 	body, err := encoderJSON.Marshall()
 	if err != nil {

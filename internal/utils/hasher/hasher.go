@@ -27,15 +27,15 @@ func (hsh *Hash) Hasher(m *encoder.Encode) string {
 	switch m.MType {
 	case "counter":
 		data = fmt.Sprintf("%s:%s:%d", m.ID, m.MType, *m.Delta)
+		log.Printf("data во время хеширования: %s, дельта: %d", data, *m.Delta)
 	case "gauge":
 		data = fmt.Sprintf("%s:%s:%f", m.ID, m.MType, *m.Value)
+		log.Printf("data во время хеширования: %s, значение: %f", data, *m.Value)
 	}
 
 	if hsh.Key == nil {
 		return ""
 	}
-
-	log.Printf("data во время хеширования: %s", data)
 
 	h := hmac.New(sha256.New, hsh.Key)
 	h.Write([]byte(data))
