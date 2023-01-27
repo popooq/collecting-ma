@@ -113,7 +113,7 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 		log.Println("something went wrong while decode", err)
 	}
 	// log.Printf("metrics: %+v", ms.encoder)
-	log.Printf("data до хеширования: %s:%s:%f", ms.encoder.ID, ms.encoder.MType, *ms.encoder.Value)
+	//log.Printf("data до хеширования: %s:%s:%f", ms.encoder.ID, ms.encoder.MType, *ms.encoder.Value)
 	switch {
 	case ms.encoder.MType == "gauge":
 		ms.storage.InsertMetric(ms.encoder.ID, *ms.encoder.Value)
