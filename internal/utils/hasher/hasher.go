@@ -29,7 +29,7 @@ func (hsh *Hash) Hasher(m *encoder.Encode) string {
 		data = fmt.Sprintf("%s:%s:%d", m.ID, m.MType, *m.Delta)
 		log.Printf("data во время хеширования: %s, дельта: %d", data, *m.Delta)
 	case "gauge":
-		data = fmt.Sprintf("%s:%s:%f", m.ID, m.MType, *m.Value)
+		data = fmt.Sprintf("%s:gauge:%f", m.ID, *m.Value)
 		log.Printf("data во время хеширования: %s, значение: %f", data, *m.Value)
 	}
 
