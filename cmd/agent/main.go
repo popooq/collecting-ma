@@ -29,7 +29,7 @@ func main() {
 			c++
 		case <-tickerreport.C:
 			log.Printf("key: %s", cfg.Key)
-			random := float64(rand.Int())
+			random := float64(rand.Uint32())
 			sndr.SendMetrics(storage.Counter(c), "PollCount", cfg.Address, cfg.Key)
 			sndr.SendMetrics(float64(m.Alloc), "Alloc", cfg.Address, cfg.Key)
 			sndr.SendMetrics(float64(m.BuckHashSys), "BuckHashSys", cfg.Address, cfg.Key)

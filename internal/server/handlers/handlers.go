@@ -108,16 +108,21 @@ func (ms MetricStorage) AllMetrics(w http.ResponseWriter, r *http.Request) {
 
 func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request) {
 
-	err := ms.encoder.Decode(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Println("something went wrong while decode", err)
+		log.Printf("error during ReadAll: %s", err)
 	}
-	// log.Printf("metrics: %+v", ms.encoder)
-	//log.Printf("data до хеширования: %s:%s:%f", ms.encoder.ID, ms.encoder.MType, *ms.encoder.Value)
+
+	log.Print(string(body))
+
+	err = ms.encoder.Unmarshal(body)
+	if err != nil {
+		log.Printf("error during unmarshalling in handler: %s", err)
+	}
+
 	switch {
 	case ms.encoder.MType == "gauge":
 		ms.storage.InsertMetric(ms.encoder.ID, *ms.encoder.Value)
-
 		ms.encoder.Value, err = ms.storage.GetMetricJSONGauge(ms.encoder.ID)
 		ms.encoder.Delta = nil
 		if err != nil {
@@ -189,7 +194,6 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, fmt.Sprintf("error : %s", err), http.StatusBadRequest)
 		return
 	}
-	log.Printf("Значение хеша после проверки чекером %s", ms.encoder.Hash)
 
 	w.WriteHeader(http.StatusOK)
 	err = ms.encoder.Encode(w)

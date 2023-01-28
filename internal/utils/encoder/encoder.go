@@ -2,6 +2,7 @@ package encoder
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 )
 
@@ -38,4 +39,11 @@ func (m *Encode) Encode(body io.Writer) error {
 
 func (m *Encode) Marshall() ([]byte, error) {
 	return json.Marshal(m)
+}
+
+func (m *Encode) Unmarshal(data []byte) (err error) {
+	if err = json.Unmarshal(data, m); err != nil {
+		err = fmt.Errorf("error during unmarshalling: %s", err)
+	}
+	return
 }
