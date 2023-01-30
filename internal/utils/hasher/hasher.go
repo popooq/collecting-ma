@@ -3,7 +3,6 @@ package hasher
 import (
 	"crypto/hmac"
 	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"log"
 
@@ -24,6 +23,10 @@ func (hsh *Hash) Hasher(m *encoder.Encode) string {
 
 	var data string
 
+	if hsh.Key == nil {
+		return ""
+	}
+
 	switch m.MType {
 	case "counter":
 		data = fmt.Sprintf("%s:%s:%d", m.ID, m.MType, *m.Delta)
@@ -33,15 +36,9 @@ func (hsh *Hash) Hasher(m *encoder.Encode) string {
 		log.Printf("data во время хеширования: %s, значение: %f", data, *m.Value)
 	}
 
-	if hsh.Key == nil {
-		return ""
-	}
-
 	h := hmac.New(sha256.New, hsh.Key)
 	h.Write([]byte(data))
-	hash := hex.EncodeToString(h.Sum(nil))
-
-	return hash
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 func (hsh *Hash) HashChecker(hash string, m encoder.Encode) error {

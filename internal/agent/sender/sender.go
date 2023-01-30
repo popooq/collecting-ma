@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"log"
-	"net/http"
 	"net/url"
 
 	"strings"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 	"github.com/popooq/collectimg-ma/internal/utils/hasher"
@@ -24,6 +24,7 @@ func NewSender(hasher *hasher.Hash) Sender {
 	}
 }
 func (s *Sender) SendMetrics(value any, name, endpoint, key string) {
+
 	var encoderJSON encoder.Encode
 
 	types := strings.ToLower(strings.TrimPrefix(fmt.Sprintf("%T", value), "storage."))
@@ -61,8 +62,6 @@ func (s *Sender) SendMetrics(value any, name, endpoint, key string) {
 
 	encoderJSON.Hash = hash
 
-	//log.Printf("metric: %s, it's hash: %s", encoderJSON.ID, encoderJSON.Hash)
-
 	body, err := encoderJSON.Marshall()
 	if err != nil {
 		log.Printf("error %s in agent", err)
@@ -75,18 +74,16 @@ func (s *Sender) SendMetrics(value any, name, endpoint, key string) {
 		log.Printf("url joining failed, error: %s", err)
 	}
 
-	log.Println(string(body))
+	client := resty.New().SetBaseURL(endpoint)
 
-	// switch encoderJSON.MType {
-	// case "gauge":
-	// 	log.Printf("json в разрезре: Имя %s \n Тип %s \n Значение %f \n Хеш %s", encoderJSON.ID, encoderJSON.MType, *encoderJSON.Value, encoderJSON.Hash)
-	// case "counter":
-	// 	log.Printf("json в разрезре: Имя %s \n Тип %s \n Дельта %d \n Хеш %s", encoderJSON.ID, encoderJSON.MType, *encoderJSON.Delta, encoderJSON.Hash)
-	// }
-	resp, err := http.Post(endpoint, "application/json", requestBody)
+	req := client.R().
+		SetHeader("Accept-Encoding", "gzip").
+		SetHeader("Content-Type", "application/json")
+
+	resp, err := req.SetBody(requestBody).Post(endpoint)
 	if err != nil {
 		log.Printf("Server unreachible, error: %s", err)
 	} else {
-		defer resp.Body.Close()
+		defer resp.RawBody().Close()
 	}
 }
