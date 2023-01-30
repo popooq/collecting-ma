@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/url"
-
 	"strings"
 
 	"github.com/go-resty/resty/v2"
@@ -18,58 +17,18 @@ type Sender struct {
 	hasher *hasher.Hash
 }
 
-func NewSender(hasher *hasher.Hash) Sender {
+func New(hasher *hasher.Hash) Sender {
 	return Sender{
 		hasher: hasher,
 	}
 }
-func (s *Sender) SendMetrics(value any, name, endpoint, key string) {
 
-	var encoderJSON encoder.Encode
-
-	types := strings.ToLower(strings.TrimPrefix(fmt.Sprintf("%T", value), "storage."))
-
-	encoderJSON.ID = name
-	encoderJSON.MType = types
-
-	switch encoderJSON.MType {
-	case "float64":
-		assertvalue, ok := value.(float64)
-		if !ok {
-			log.Printf("conversion failed")
-		}
-
-		floatvalue := float64(assertvalue)
-
-		encoderJSON.Value = &floatvalue
-		encoderJSON.MType = "gauge"
-	case "counter":
-		assertdelta, ok := value.(storage.Counter)
-		if !ok {
-			log.Printf("conversion failed")
-		}
-
-		intdelta := int64(assertdelta)
-
-		encoderJSON.Delta = &intdelta
-	}
-
-	hash := s.hasher.Hasher(&encoderJSON)
-	err := s.hasher.HashChecker(hash, encoderJSON)
-	if err != nil {
-		log.Printf("error: %s", err)
-	}
-
-	encoderJSON.Hash = hash
-
-	body, err := encoderJSON.Marshall()
-	if err != nil {
-		log.Printf("error %s in agent", err)
-	}
+func (s *Sender) Go(value any, name, endpoint string) {
+	body := s.bodyBuild(value, name)
 
 	requestBody := bytes.NewBuffer(body)
 
-	endpoint, err = url.JoinPath("http://", endpoint, "update/")
+	endpoint, err := url.JoinPath("http://", endpoint, "update/")
 	if err != nil {
 		log.Printf("url joining failed, error: %s", err)
 	}
@@ -86,4 +45,49 @@ func (s *Sender) SendMetrics(value any, name, endpoint, key string) {
 	} else {
 		defer resp.RawBody().Close()
 	}
+}
+
+func (s *Sender) bodyBuild(value any, name string) []byte {
+	var encoderJSON encoder.Encode
+
+	types := strings.ToLower(strings.TrimPrefix(fmt.Sprintf("%T", value), "storage."))
+
+	encoderJSON.ID = name
+	encoderJSON.MType = types
+
+	switch encoderJSON.MType {
+	case "float64":
+		assertvalue, ok := value.(float64)
+		if !ok {
+			log.Printf("conversion failed")
+		}
+
+		encoderJSON.Value = &assertvalue
+		encoderJSON.MType = "gauge"
+	case "counter":
+		assertdelta, ok := value.(storage.Counter)
+		if !ok {
+			log.Printf("conversion failed")
+		}
+
+		intdelta := int64(assertdelta)
+
+		encoderJSON.Delta = &intdelta
+	}
+
+	hash := s.hasher.Hasher(&encoderJSON)
+
+	err := s.hasher.HashChecker(hash, encoderJSON)
+	if err != nil {
+		log.Printf("error: %s", err)
+	}
+
+	encoderJSON.Hash = hash
+
+	body, err := encoderJSON.Marshall()
+	if err != nil {
+		log.Printf("error %s in agent", err)
+	}
+
+	return body
 }

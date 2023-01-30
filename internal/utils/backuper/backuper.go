@@ -3,6 +3,7 @@ package backuper
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -23,10 +24,11 @@ type Backuper struct {
 }
 
 func NewSaver(storage *storage.MetricsStorage, cfg *config.Config, enc *encoder.Encode) (*Backuper, error) {
-	file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
+	file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o777)
 	if err != nil {
 		return nil, err
 	}
+
 	return &Backuper{
 		storage: storage,
 		cfg:     cfg,
@@ -47,10 +49,11 @@ type Loader struct {
 }
 
 func NewLoader(storage *storage.MetricsStorage, cfg *config.Config, encoder *encoder.Encode) (*Loader, error) {
-	file, err := os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0777)
+	file, err := os.OpenFile(cfg.StoreFile, os.O_RDONLY|os.O_CREATE, 0o777)
 	if err != nil {
 		return nil, err
 	}
+
 	return &Loader{
 		storage: storage,
 		cfg:     cfg,
@@ -66,9 +69,16 @@ func (s *Backuper) Close() error {
 }
 
 func (s *Backuper) SaveToFile() error {
-	s.file.Truncate(0)
+	err := s.file.Truncate(0)
+	if err != nil {
+		return fmt.Errorf("err %w", err)
+	}
+
 	_ = s.writer.WriteByte('[')
+
 	for k, v := range s.storage.MetricsGauge {
+		v := v
+
 		s.enc.ID = k
 		s.enc.MType = "gauge"
 		s.enc.Value = &v
@@ -78,20 +88,26 @@ func (s *Backuper) SaveToFile() error {
 		if err != nil {
 			return err
 		}
+
 		_, err = s.writer.Write(data)
 		if err != nil {
 			return err
 		}
+
 		err = s.writer.WriteByte(',')
 		if err != nil {
 			return err
 		}
+
 		err = s.writer.WriteByte('\n')
 		if err != nil {
 			return err
 		}
 	}
+
 	for k, v := range s.storage.MetricsCounter {
+		v := v
+
 		s.enc.ID = k
 		s.enc.MType = "counter"
 		s.enc.Value = nil
@@ -101,31 +117,37 @@ func (s *Backuper) SaveToFile() error {
 		if err != nil {
 			return err
 		}
+
 		_, err = s.writer.Write(data)
 		if err != nil {
 			return err
 		}
+
 		err = s.writer.WriteByte(',')
 		if err != nil {
 			return err
 		}
+
 		err = s.writer.WriteByte('\n')
 		if err != nil {
 			return err
 		}
 	}
+
 	_, _ = s.writer.WriteString("{}]")
-	log.Printf("new backup created")
+
 	return s.writer.Flush()
 }
 
-func (s *Backuper) Saver() error {
+func (s *Backuper) Saver() {
 	tickerstore := time.NewTicker(s.cfg.StoreInterval)
+
 	for {
 		<-tickerstore.C
+
 		err := s.SaveToFile()
 		if err != nil {
-			return err
+			return
 		}
 	}
 }
@@ -135,18 +157,23 @@ func (l *Loader) Close() error {
 }
 
 func (l *Loader) LoadFromFile() error {
-	var data []byte
+	var (
+		data    []byte
+		encoder []encoder.Encode
+	)
+
 	data, err := io.ReadAll(l.reader)
 	if err != nil {
 		log.Printf("erad err : %s", err)
 		return err
 	}
-	var encoder []encoder.Encode
+
 	err = json.Unmarshal(data, &encoder)
 	if err != nil {
 		log.Printf("marshal err : %s", err)
 		return err
 	}
+
 	for _, v := range encoder {
 		switch v.MType {
 		case "gauge":
@@ -155,5 +182,6 @@ func (l *Loader) LoadFromFile() error {
 			l.storage.GetBackupCounter(v.ID, *v.Delta)
 		}
 	}
+
 	return nil
 }

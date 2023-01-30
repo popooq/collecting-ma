@@ -16,17 +16,22 @@ type Config struct {
 	Key           string        `env:"KEY"`
 }
 
-func NewServerConfig() *Config {
-	var cfg Config
+func New() *Config {
+	var (
+		cfg       Config
+		storeTime = time.Second * 300
+	)
+
 	flag.StringVar(&cfg.Address, "a", "127.0.0.1:8080", "set server listening address")
 	flag.StringVar(&cfg.Key, "k", "", "hashing key")
-	flag.DurationVar(&cfg.StoreInterval, "i", time.Second*300, "metric backup timer")
+	flag.DurationVar(&cfg.StoreInterval, "i", storeTime, "metric backup timer")
 	flag.StringVar(&cfg.StoreFile, "f", "/tmp/devops-metrics-db.json", "directory for saving metrics")
 	flag.BoolVar(&cfg.Restore, "r", true, "recovering from backup before start")
 	flag.Parse()
-	err := env.Parse(&cfg)
-	if err != nil {
+
+	if err := env.Parse(&cfg); err != nil {
 		log.Printf("env parse failed :%s", err)
 	}
+
 	return &cfg
 }

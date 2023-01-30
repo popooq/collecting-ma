@@ -14,26 +14,27 @@ type Encode struct {
 	Hash  string   `json:"hash,omitempty"`  // значение хеш-функции
 }
 
-func NewEncoderMetricsStruct() *Encode {
+func New() *Encode {
 	return &Encode{}
 }
-func (m *Encode) Decode(body io.ReadCloser) error {
 
+func (m *Encode) Decode(body io.Reader) error {
 	dec := json.NewDecoder(body)
 
-	err := dec.Decode(&m)
-	if err != nil {
+	if err := dec.Decode(&m); err != nil {
 		return err
 	}
+
 	return nil
 }
 
 func (m *Encode) Encode(body io.Writer) error {
 	enc := json.NewEncoder(body)
-	err := enc.Encode(&m)
-	if err != nil {
+
+	if err := enc.Encode(&m); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -41,9 +42,10 @@ func (m *Encode) Marshall() ([]byte, error) {
 	return json.Marshal(m)
 }
 
-func (m *Encode) Unmarshal(data []byte) (err error) {
-	if err = json.Unmarshal(data, m); err != nil {
-		err = fmt.Errorf("error during unmarshalling: %s", err)
+func (m *Encode) Unmarshal(data []byte) error {
+	if err := json.Unmarshal(data, m); err != nil {
+		return fmt.Errorf("error during unmarshalling: %w", err)
 	}
-	return
+
+	return nil
 }

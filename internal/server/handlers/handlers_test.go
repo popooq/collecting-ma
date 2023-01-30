@@ -1,4 +1,4 @@
-package handlers
+package handlers_test
 
 import (
 	"net/http"
@@ -7,17 +7,17 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/popooq/collectimg-ma/internal/server/handlers"
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
 
-func NewRouter() chi.Router {
-
-	MemS := storage.NewMetricStorage()
-	metricStruct := encoder.NewEncoderMetricsStruct()
-	hasher := hasher.MewHash("")
-	handler := NewMetricStorage(MemS, metricStruct, hasher)
+func NewRouter() *chi.Mux {
+	MemS := storage.New()
+	metricStruct := encoder.New()
+	hasher := hasher.Mew("")
+	handler := handlers.New(MemS, metricStruct, hasher)
 
 	MemS.InsertMetric("Alloc", 123.000)
 	MemS.CountCounterMetric("PollCount", 34)
@@ -40,11 +40,11 @@ func NewRouter() chi.Router {
 			handler.AllMetrics(w, r)
 		})
 	})
+
 	return r
 }
 
 func TestMetricStorageServeHTTP(t *testing.T) {
-
 	tests := []struct {
 		name string
 		url  string
@@ -71,7 +71,7 @@ func TestMetricStorageServeHTTP(t *testing.T) {
 			code: 400,
 		},
 		{
-			name: "Negative test: Unkonwn metric",
+			name: "Negative test: Unknown metric",
 			url:  "/update/unknown/poop/111",
 			code: 501,
 		},
@@ -98,7 +98,6 @@ func TestMetricStorageServeHTTP(t *testing.T) {
 }
 
 func TestMetricStorageAllMetrics(t *testing.T) {
-
 	tests := []struct {
 		name string
 		url  string
@@ -127,7 +126,6 @@ func TestMetricStorageAllMetrics(t *testing.T) {
 }
 
 func TestMetricStorageMetricValue(t *testing.T) {
-
 	tests := []struct {
 		name string
 		url  string

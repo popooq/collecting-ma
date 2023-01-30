@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"math/rand"
 	"runtime"
 	"time"
@@ -13,55 +12,56 @@ import (
 )
 
 func main() {
-	cfg := config.NewAgentConfig()
-	hshr := hasher.MewHash(cfg.Key)
-	sndr := sender.NewSender(hshr)
+	cfg := config.New()
+	hshr := hasher.Mew(cfg.Key)
+	sndr := sender.New(hshr)
+
 	var (
-		m            runtime.MemStats
-		c            int64
+		memStat      runtime.MemStats
+		counter      int64
 		tickerpoll   = time.NewTicker(cfg.PollInterval)
 		tickerreport = time.NewTicker(cfg.ReportInterval)
 	)
+
 	for {
 		select {
 		case <-tickerpoll.C:
-			runtime.ReadMemStats(&m)
-			c++
+			runtime.ReadMemStats(&memStat)
+			counter++
 		case <-tickerreport.C:
 			cfg := cfg
-			m := m
-			counter := storage.Counter(c)
-			log.Printf("key: %s", cfg.Key)
+			mem := memStat
+			counter := storage.Counter(counter)
 			random := float64(rand.Uint32())
-			sndr.SendMetrics(random, "RandomValue", cfg.Address, cfg.Key)
-			sndr.SendMetrics(counter, "PollCount", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.Alloc), "Alloc", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.BuckHashSys), "BuckHashSys", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.Frees), "Frees", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.GCCPUFraction), "GCCPUFraction", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.GCSys), "GCSys", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.HeapAlloc), "HeapAlloc", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.HeapIdle), "HeapIdle", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.HeapInuse), "HeapInuse", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.HeapObjects), "HeapObjects", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.HeapReleased), "HeapReleased", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.HeapSys), "HeapSys", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.LastGC), "LastGC", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.Lookups), "Lookups", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.MCacheInuse), "MCacheInuse", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.MCacheSys), "MCacheSys", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.MSpanInuse), "MSpanInuse", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.MSpanSys), "MSpanSys", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.Mallocs), "Mallocs", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.NextGC), "NextGC", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.NumForcedGC), "NumForcedGC", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.NumGC), "NumGC", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.OtherSys), "OtherSys", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.PauseTotalNs), "PauseTotalNs", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.StackInuse), "StackInuse", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.StackSys), "StackSys", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.Sys), "Sys", cfg.Address, cfg.Key)
-			sndr.SendMetrics(float64(m.TotalAlloc), "TotalAlloc", cfg.Address, cfg.Key)
+			sndr.Go(random, "RandomValue", cfg.Address)
+			sndr.Go(counter, "PollCount", cfg.Address)
+			sndr.Go(float64(mem.Alloc), "Alloc", cfg.Address)
+			sndr.Go(float64(mem.BuckHashSys), "BuckHashSys", cfg.Address)
+			sndr.Go(float64(mem.Frees), "Frees", cfg.Address)
+			sndr.Go(mem.GCCPUFraction, "GCCPUFraction", cfg.Address)
+			sndr.Go(float64(mem.GCSys), "GCSys", cfg.Address)
+			sndr.Go(float64(mem.HeapAlloc), "HeapAlloc", cfg.Address)
+			sndr.Go(float64(mem.HeapIdle), "HeapIdle", cfg.Address)
+			sndr.Go(float64(mem.HeapInuse), "HeapInuse", cfg.Address)
+			sndr.Go(float64(mem.HeapObjects), "HeapObjects", cfg.Address)
+			sndr.Go(float64(mem.HeapReleased), "HeapReleased", cfg.Address)
+			sndr.Go(float64(mem.HeapSys), "HeapSys", cfg.Address)
+			sndr.Go(float64(mem.LastGC), "LastGC", cfg.Address)
+			sndr.Go(float64(mem.Lookups), "Lookups", cfg.Address)
+			sndr.Go(float64(mem.MCacheInuse), "MCacheInuse", cfg.Address)
+			sndr.Go(float64(mem.MCacheSys), "MCacheSys", cfg.Address)
+			sndr.Go(float64(mem.MSpanInuse), "MSpanInuse", cfg.Address)
+			sndr.Go(float64(mem.MSpanSys), "MSpanSys", cfg.Address)
+			sndr.Go(float64(mem.Mallocs), "Mallocs", cfg.Address)
+			sndr.Go(float64(mem.NextGC), "NextGC", cfg.Address)
+			sndr.Go(float64(mem.NumForcedGC), "NumForcedGC", cfg.Address)
+			sndr.Go(float64(mem.NumGC), "NumGC", cfg.Address)
+			sndr.Go(float64(mem.OtherSys), "OtherSys", cfg.Address)
+			sndr.Go(float64(mem.PauseTotalNs), "PauseTotalNs", cfg.Address)
+			sndr.Go(float64(mem.StackInuse), "StackInuse", cfg.Address)
+			sndr.Go(float64(mem.StackSys), "StackSys", cfg.Address)
+			sndr.Go(float64(mem.Sys), "Sys", cfg.Address)
+			sndr.Go(float64(mem.TotalAlloc), "TotalAlloc", cfg.Address)
 		}
 	}
 }

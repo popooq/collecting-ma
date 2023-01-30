@@ -8,8 +8,7 @@ import (
 	"github.com/popooq/collectimg-ma/internal/server/handlers"
 )
 
-func NewRouter(handler handlers.MetricStorage) chi.Router {
-
+func New(handler handlers.MetricStorage) *chi.Mux {
 	router := chi.NewRouter()
 
 	router.Use(middleware.RequestID)
@@ -35,5 +34,6 @@ func NewRouter(handler handlers.MetricStorage) chi.Router {
 			handler.AllMetrics(w, r)
 		})
 	})
+
 	return router
 }

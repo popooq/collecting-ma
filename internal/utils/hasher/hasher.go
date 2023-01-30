@@ -13,37 +13,38 @@ type Hash struct {
 	Key []byte
 }
 
-func MewHash(key string) *Hash {
+func Mew(key string) *Hash {
 	return &Hash{
 		Key: []byte(key),
 	}
 }
 
-func (hsh *Hash) Hasher(m *encoder.Encode) string {
-
+func (hsh *Hash) Hasher(metric *encoder.Encode) string {
 	var data string
 
 	if hsh.Key == nil {
 		return ""
 	}
 
-	switch m.MType {
+	switch metric.MType {
 	case "counter":
-		data = fmt.Sprintf("%s:%s:%d", m.ID, m.MType, *m.Delta)
-		log.Printf("data во время хеширования: %s, дельта: %d", data, *m.Delta)
+		data = fmt.Sprintf("%s:%s:%d", metric.ID, metric.MType, *metric.Delta)
+		log.Printf("data во время хеширования: %s, дельта: %d", data, *metric.Delta)
 	case "gauge":
-		data = fmt.Sprintf("%s:gauge:%f", m.ID, *m.Value)
-		log.Printf("data во время хеширования: %s, значение: %f", data, *m.Value)
+		data = fmt.Sprintf("%s:gauge:%f", metric.ID, *metric.Value)
+		log.Printf("data во время хеширования: %s, значение: %f", data, *metric.Value)
 	}
 
 	h := hmac.New(sha256.New, hsh.Key)
 	h.Write([]byte(data))
+
 	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
-func (hsh *Hash) HashChecker(hash string, m encoder.Encode) error {
-	if m.Hash != "" && !hmac.Equal([]byte(m.Hash), []byte(hash)) {
-		return fmt.Errorf("not equal m.hash %x and hash %x", []byte(m.Hash), []byte(hash))
+func (hsh *Hash) HashChecker(hash string, metric encoder.Encode) error {
+	if metric.Hash != "" && !hmac.Equal([]byte(metric.Hash), []byte(hash)) {
+		return fmt.Errorf("not equal metric.hash %x and hash %x", []byte(metric.Hash), []byte(hash))
 	}
+
 	return nil
 }
