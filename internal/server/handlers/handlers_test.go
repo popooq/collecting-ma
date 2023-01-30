@@ -136,9 +136,9 @@ func TestMetricStorageMetricValue(t *testing.T) {
 			code: 200,
 		},
 		{
-			name: "Positive test Counter",
-			url:  "/value/counter/PollCount",
-			code: 200,
+			name: "Negative test Counter",
+			url:  "/value/counter/PollCoun",
+			code: 404,
 		},
 		{
 			name: "Negative test Gauge",
@@ -146,9 +146,9 @@ func TestMetricStorageMetricValue(t *testing.T) {
 			code: 404,
 		},
 		{
-			name: "Negative test Counter",
-			url:  "/value/counter/PollCoun",
-			code: 404,
+			name: "Positive test Counter",
+			url:  "/value/counter/PollCount",
+			code: 200,
 		},
 		{
 			name: "Negative test Unknown type",

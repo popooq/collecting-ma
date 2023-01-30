@@ -80,7 +80,7 @@ func (ms *MetricsStorage) GetMetricCounter(name string) (int64, error) {
 	defer ms.mu.Unlock()
 	value, ok := ms.MetricsCounter[name]
 
-	if ok {
+	if !ok {
 		err := fmt.Errorf("metric %s doesn't exist", name)
 
 		return 0, err
