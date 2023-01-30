@@ -18,8 +18,8 @@ import (
 type (
 	MetricStorage struct {
 		storage *storage.MetricsStorage
-		encoder *encoder.Encode
-		hasher  *hasher.Hash
+		//	encoder *encoder.Encode
+		hasher *hasher.Hash
 	}
 	gzipWriter struct {
 		http.ResponseWriter
@@ -30,8 +30,8 @@ type (
 func NewMetricStorage(stor *storage.MetricsStorage, encoder *encoder.Encode, hasher *hasher.Hash) MetricStorage {
 	return MetricStorage{
 		storage: stor,
-		encoder: encoder,
-		hasher:  hasher}
+		//	encoder: encoder,
+		hasher: hasher}
 }
 
 func (ms MetricStorage) CollectMetrics(w http.ResponseWriter, r *http.Request) {
@@ -115,24 +115,26 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 
 	log.Print(string(body))
 
-	err = ms.encoder.Unmarshal(body)
+	encoder := encoder.NewEncoderMetricsStruct()
+
+	err = encoder.Unmarshal(body)
 	if err != nil {
 		log.Printf("error during unmarshalling in handler: %s", err)
 	}
 
 	switch {
-	case ms.encoder.MType == "gauge":
-		ms.storage.InsertMetric(ms.encoder.ID, *ms.encoder.Value)
-		ms.encoder.Value, err = ms.storage.GetMetricJSONGauge(ms.encoder.ID)
-		ms.encoder.Delta = nil
+	case encoder.MType == "gauge":
+		ms.storage.InsertMetric(encoder.ID, *encoder.Value)
+		encoder.Value, err = ms.storage.GetMetricJSONGauge(encoder.ID)
+		encoder.Delta = nil
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
-	case ms.encoder.MType == "counter":
-		ms.storage.CountCounterMetric(ms.encoder.ID, *ms.encoder.Delta)
-		ms.encoder.Delta, err = ms.storage.GetMetricJSONCounter(ms.encoder.ID)
-		ms.encoder.Value = nil
+	case encoder.MType == "counter":
+		ms.storage.CountCounterMetric(encoder.ID, *encoder.Delta)
+		encoder.Delta, err = ms.storage.GetMetricJSONCounter(encoder.ID)
+		encoder.Value = nil
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
@@ -142,12 +144,12 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	ms.encoder.Hash = ms.hasher.Hasher(ms.encoder)
-	log.Printf("current hash: %s", ms.encoder.Hash)
+	encoder.Hash = ms.hasher.Hasher(encoder)
+	log.Printf("current hash: %s", encoder.Hash)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	err = ms.encoder.Encode(w)
+	err = encoder.Encode(w)
 	if err != nil {
 		log.Println("something goes wrong", err)
 	}
@@ -155,7 +157,9 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 
 func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) {
 
-	err := ms.encoder.Decode(r.Body)
+	encoder := encoder.NewEncoderMetricsStruct()
+
+	err := encoder.Decode(r.Body)
 	if err != nil {
 		http.Error(w, fmt.Sprintln("something went wrong while decoding", err), http.StatusBadRequest)
 	}
@@ -163,40 +167,40 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 
 	switch {
-	case ms.encoder.MType == "gauge":
-		gaugeValue, err := ms.storage.GetMetricGauge(ms.encoder.ID)
+	case encoder.MType == "gauge":
+		gaugeValue, err := ms.storage.GetMetricGauge(encoder.ID)
 		if err != nil {
-			log.Printf("this metric doesn't exist %s", ms.encoder.ID)
+			log.Printf("this metric doesn't exist %s", encoder.ID)
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
 
-		ms.encoder.Value = &gaugeValue
-		ms.encoder.Delta = nil
+		encoder.Value = &gaugeValue
+		encoder.Delta = nil
 
-	case ms.encoder.MType == "counter":
-		value, err := ms.storage.GetMetricCounter(ms.encoder.ID)
+	case encoder.MType == "counter":
+		value, err := ms.storage.GetMetricCounter(encoder.ID)
 		if err != nil {
-			log.Printf("this metric doesn't exist %s", ms.encoder.ID)
+			log.Printf("this metric doesn't exist %s", encoder.ID)
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
 		counterVal := int64(value)
-		ms.encoder.Delta = &counterVal
-		ms.encoder.Value = nil
+		encoder.Delta = &counterVal
+		encoder.Value = nil
 	default:
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
 
-	err = ms.hasher.HashChecker(ms.encoder.Hash, *ms.encoder)
+	err = ms.hasher.HashChecker(encoder.Hash, *encoder)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("error : %s", err), http.StatusBadRequest)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	err = ms.encoder.Encode(w)
+	err = encoder.Encode(w)
 	if err != nil {
 		log.Println("something went wrong while encode", err)
 	}
