@@ -28,6 +28,8 @@ func main() {
 			runtime.ReadMemStats(&m)
 			c++
 		case <-tickerreport.C:
+			cfg := cfg
+			m := m
 			log.Printf("key: %s", cfg.Key)
 			random := float64(rand.Uint32())
 			sndr.SendMetrics(random, "RandomValue", cfg.Address, cfg.Key)
