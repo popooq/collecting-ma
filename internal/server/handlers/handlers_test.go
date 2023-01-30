@@ -1,4 +1,4 @@
-package handlers_test
+package handlers
 
 import (
 	"net/http"
@@ -7,7 +7,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/popooq/collectimg-ma/internal/server/handlers"
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 	"github.com/popooq/collectimg-ma/internal/utils/hasher"
@@ -17,7 +16,7 @@ func NewRouter() *chi.Mux {
 	MemS := storage.New()
 	metricStruct := encoder.New()
 	hasher := hasher.Mew("")
-	handler := handlers.New(MemS, metricStruct, hasher)
+	handler := New(MemS, metricStruct, hasher)
 
 	MemS.InsertMetric("Alloc", 123.000)
 	MemS.CountCounterMetric("PollCount", 34)
