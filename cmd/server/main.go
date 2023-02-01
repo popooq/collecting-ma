@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 
@@ -11,22 +12,25 @@ import (
 	"github.com/popooq/collectimg-ma/internal/utils/backuper"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 	"github.com/popooq/collectimg-ma/internal/utils/hasher"
+	"github.com/popooq/collectimg-ma/internal/utils/pgdb"
 )
 
 func main() {
+	context := context.Background()
 	storage := storage.New()
 	encoder := encoder.New()
-	cfg := config.New()
-	hasher := hasher.Mew(cfg.Key)
-	handler := handlers.New(storage, encoder, hasher)
+	config := config.New()
+	hasher := hasher.Mew(config.Key)
+	database := pgdb.New(context, config, storage)
+	handler := handlers.New(storage, hasher, database)
 	router := router.New(handler)
-	safe, err := backuper.NewSaver(storage, cfg, encoder)
+	safe, err := backuper.NewSaver(storage, config, encoder)
 	if err != nil {
 		log.Printf("error during create new saver %s", err)
 	}
 
-	if cfg.Restore {
-		loader, err := backuper.NewLoader(storage, cfg, encoder)
+	if config.Restore {
+		loader, err := backuper.NewLoader(storage, config, encoder)
 		if err != nil {
 			log.Printf("error during create new loader %s", err)
 		}
@@ -39,5 +43,5 @@ func main() {
 
 	go safe.Saver()
 
-	log.Fatal(http.ListenAndServe(cfg.Address, handlers.GzipHandler(router)))
+	log.Fatal(http.ListenAndServe(config.Address, handlers.GzipHandler(router)))
 }

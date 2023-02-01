@@ -21,14 +21,14 @@ type (
 	MetricsStorage struct {
 		MetricsGauge   map[string]float64
 		MetricsCounter map[string]int64
-		mu             *sync.Mutex
+		mu             sync.Mutex
 	}
 	Counter int64
 )
 
 func New() *MetricsStorage {
 	var ms MetricsStorage
-	ms.mu = &sync.Mutex{}
+	ms.mu = sync.Mutex{}
 	ms.MetricsGauge = make(map[string]float64)
 	ms.MetricsCounter = make(map[string]int64)
 

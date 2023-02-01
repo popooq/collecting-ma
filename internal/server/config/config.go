@@ -14,6 +14,7 @@ type Config struct {
 	StoreFile     string        `env:"STORE_FILE"`
 	Restore       bool          `env:"RESTORE"`
 	Key           string        `env:"KEY"`
+	DBAddress     string        `env:"DATABASE_DSN"`
 }
 
 func New() *Config {
@@ -27,6 +28,7 @@ func New() *Config {
 	flag.DurationVar(&cfg.StoreInterval, "i", storeTime, "metric backup timer")
 	flag.StringVar(&cfg.StoreFile, "f", "/tmp/devops-metrics-db.json", "directory for saving metrics")
 	flag.BoolVar(&cfg.Restore, "r", true, "recovering from backup before start")
+	flag.StringVar(&cfg.DBAddress, "d", "", "set the DB address")
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {
