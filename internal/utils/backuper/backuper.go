@@ -12,18 +12,20 @@ import (
 	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
+	"github.com/popooq/collectimg-ma/internal/utils/pgdb"
 )
 
 type Backuper struct {
 	storage *storage.MetricsStorage
 	cfg     *config.Config
 	enc     *encoder.Encode
+	DB      *pgdb.DataBase
 
 	file   *os.File
 	writer *bufio.Writer
 }
 
-func NewSaver(storage *storage.MetricsStorage, cfg *config.Config, enc *encoder.Encode) (*Backuper, error) {
+func NewSaver(storage *storage.MetricsStorage, cfg *config.Config, enc *encoder.Encode, DB *pgdb.DataBase) (*Backuper, error) {
 	file, err := os.OpenFile(cfg.StoreFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o777)
 	if err != nil {
 		return nil, err
@@ -33,6 +35,7 @@ func NewSaver(storage *storage.MetricsStorage, cfg *config.Config, enc *encoder.
 		storage: storage,
 		cfg:     cfg,
 		enc:     enc,
+		DB:      DB,
 
 		file:   file,
 		writer: bufio.NewWriter(file),
@@ -79,10 +82,7 @@ func (s *Backuper) SaveToFile() error {
 	for k, v := range s.storage.MetricsGauge {
 		v := v
 
-		s.enc.ID = k
-		s.enc.MType = "gauge"
-		s.enc.Value = &v
-		s.enc.Delta = nil
+		s.fillEnc(k, "gauge", v, *s.enc.Delta)
 
 		data, err := s.enc.Marshall()
 		if err != nil {
@@ -105,13 +105,10 @@ func (s *Backuper) SaveToFile() error {
 		}
 	}
 
-	for k, v := range s.storage.MetricsCounter {
-		v := v
+	for k, d := range s.storage.MetricsCounter {
+		d := d
 
-		s.enc.ID = k
-		s.enc.MType = "counter"
-		s.enc.Value = nil
-		s.enc.Delta = &v
+		s.fillEnc(k, "counter", *s.enc.Value, d)
 
 		data, err := s.enc.Marshall()
 		if err != nil {
@@ -139,12 +136,31 @@ func (s *Backuper) SaveToFile() error {
 	return s.writer.Flush()
 }
 
+func (s *Backuper) SaveToDB() error {
+	for k, v := range s.storage.MetricsGauge {
+		v := v
+
+		s.fillEnc(k, "gauge", v, *s.enc.Delta)
+
+		s.DB.InsertMetric(*s.enc)
+	}
+	err := fmt.Errorf("error")
+	return err
+
+}
+
 func (s *Backuper) Saver() {
 	tickerstore := time.NewTicker(s.cfg.StoreInterval)
 
 	for {
 		<-tickerstore.C
 
+		if s.cfg.DBAddress != "" {
+			err := s.SaveToDB()
+			if err != nil {
+				return
+			}
+		}
 		err := s.SaveToFile()
 		if err != nil {
 			return
@@ -184,4 +200,11 @@ func (l *Loader) LoadFromFile() error {
 	}
 
 	return nil
+}
+
+func (s *Backuper) fillEnc(k, mtype string, v float64, d int64) {
+	s.enc.ID = k
+	s.enc.MType = mtype
+	s.enc.Value = &v
+	s.enc.Delta = &d
 }

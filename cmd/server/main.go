@@ -24,7 +24,7 @@ func main() {
 	database := pgdb.New(context, config, storage)
 	handler := handlers.New(storage, hasher, database)
 	router := router.New(handler)
-	safe, err := backuper.NewSaver(storage, config, encoder)
+	safe, err := backuper.NewSaver(storage, config, encoder, database)
 	if err != nil {
 		log.Printf("error during create new saver %s", err)
 	}

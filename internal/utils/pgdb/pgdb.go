@@ -10,6 +10,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/storage"
+	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 )
 
 type DataBase struct {
@@ -38,13 +39,33 @@ func New(ctx context.Context, cfg *config.Config, str *storage.MetricsStorage) *
 func (db *DataBase) CreateTable() {
 	ctx, cancel := context.WithTimeout(db.ctx, time.Second*3)
 	defer cancel()
-	db.DB.ExecContext(ctx, "CREATE TABLE metrics (ID SERIAL PRIMARY KEY, "+
-		"NAME CHARACTER VARYING(30), "+
-		"TYPE CHARACTER VARYING(10), "+
-		"HASH CHARACTER VARYING(100), "+
-		"VALUE DOUBLE PRECISION, "+
-		"DELTA INTEGER"+
-		");")
+
+	query := "CREATE TABLE metrics " +
+		"NAME VARCHAR(30), " +
+		"TYPE VARCHAR(10), " +
+		"HASH VARCHAR(100), " +
+		"VALUE DOUBLE PRECISION, " +
+		"DELTA INTEGER" +
+		");"
+	_, err := db.DB.ExecContext(ctx, query)
+	if err != nil {
+		log.Printf("Error during creating a new DB %s", err)
+	}
+}
+
+func (db *DataBase) InsertMetric(enc encoder.Encode) {
+	ctx, cancel := context.WithTimeout(db.ctx, time.Second*3)
+	defer cancel()
+
+	query := "INSERT INTO metrics " +
+		"(NAME, TYPE, HASH, VALUE, DELTA) " +
+		"VALUES ($1, $2, $3, $4, $5)"
+
+	_, err := db.DB.ExecContext(ctx, query,
+		enc.ID, enc.MType, enc.Hash, enc.Value, enc.Delta)
+	if err != nil {
+		log.Printf("Error during insert a new DB %s", err)
+	}
 }
 
 func (db *DataBase) ReturnCntext() context.Context {
