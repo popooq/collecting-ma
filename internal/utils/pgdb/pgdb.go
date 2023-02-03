@@ -28,7 +28,6 @@ func New(ctx context.Context, cfg *config.Config, str *storage.MetricsStorage) *
 	if err != nil {
 		log.Printf("Unable to connect to database: %v\n", err)
 	}
-	log.Print(cfg.DBAddress)
 	return &DataBase{
 		DB:  db,
 		ctx: ctx,
@@ -42,7 +41,7 @@ func (db *DataBase) CreateTable() {
 	defer cancel()
 
 	query := "CREATE TABLE metrics " +
-		"NAME VARCHAR(30), " +
+		"(NAME VARCHAR(30), " +
 		"TYPE VARCHAR(10), " +
 		"HASH VARCHAR(100), " +
 		"VALUE DOUBLE PRECISION, " +

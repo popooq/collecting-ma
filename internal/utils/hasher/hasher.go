@@ -4,7 +4,6 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"fmt"
-	"log"
 
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 )
@@ -29,10 +28,8 @@ func (hsh *Hash) Hasher(metric *encoder.Encode) string {
 	switch metric.MType {
 	case "counter":
 		data = fmt.Sprintf("%s:%s:%d", metric.ID, metric.MType, *metric.Delta)
-		log.Printf("data во время хеширования: %s, дельта: %d", data, *metric.Delta)
 	case "gauge":
 		data = fmt.Sprintf("%s:gauge:%f", metric.ID, *metric.Value)
-		log.Printf("data во время хеширования: %s, значение: %f", data, *metric.Value)
 	}
 
 	h := hmac.New(sha256.New, hsh.Key)
