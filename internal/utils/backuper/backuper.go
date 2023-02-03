@@ -158,17 +158,17 @@ func (s *Backuper) Saver() {
 	for {
 		<-tickerstore.C
 
-		if s.cfg.DBAddress != "" {
-			log.Print(s.cfg.DBAddress)
+		// if s.cfg.DBAddress != "" {
+		// 	log.Print(s.cfg.DBAddress)
 
-			s.DB.TruncateMetric()
+		// 	s.DB.TruncateMetric()
 
-			err := s.SaveToDB()
-			if err != nil {
-				return
-			}
+		// 	err := s.SaveToDB()
+		// 	if err != nil {
+		// 		return
+		// 	}
 
-		}
+		// }
 		err := s.SaveToFile()
 		if err != nil {
 			return
