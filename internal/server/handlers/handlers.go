@@ -199,6 +199,7 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 		encoder.Value = &gaugeValue
 		encoder.Delta = nil
 
+		log.Println(encoder)
 	case encoder.MType == counter:
 		value, err := ms.storage.GetMetricCounter(encoder.ID)
 		if err != nil {
@@ -211,12 +212,13 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 
 		encoder.Delta = &counterVal
 		encoder.Value = nil
+
+		log.Println(encoder)
 	default:
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
 
-	log.Println(encoder)
 	encoder.Hash = ms.hasher.Hasher(encoder)
 
 	err = ms.hasher.HashChecker(encoder.Hash, *encoder)
