@@ -42,9 +42,7 @@ func main() {
 	}
 
 	if config.DBAddress != "" {
-		if database == nil {
-			database.CreateTable()
-		}
+		database.CreateTable()
 		go saver.GoDB()
 	}
 	go saver.GoFile()
