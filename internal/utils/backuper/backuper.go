@@ -121,7 +121,6 @@ func (s *Backuper) SaveToFile() error {
 		}
 	}
 	_, _ = s.writer.WriteString("{}]")
-	log.Printf("new backup created")
 	return s.writer.Flush()
 }
 
@@ -152,27 +151,33 @@ func (s *Backuper) SaveToDB() error {
 
 }
 
-func (s *Backuper) Saver() {
+func (s *Backuper) GoFile() {
 	tickerstore := time.NewTicker(s.cfg.StoreInterval)
 
 	for {
 		<-tickerstore.C
 
-		// if s.cfg.DBAddress != "" {
-		// 	log.Print(s.cfg.DBAddress)
-
-		// 	s.DB.TruncateMetric()
-
-		// 	err := s.SaveToDB()
-		// 	if err != nil {
-		// 		return
-		// 	}
-
-		// }
 		err := s.SaveToFile()
 		if err != nil {
 			return
 		}
+
+		log.Printf("new backup to file created")
+	}
+}
+
+func (s *Backuper) GoDB() {
+	tickerstore := time.NewTicker(s.cfg.StoreInterval)
+
+	for {
+		<-tickerstore.C
+
+		err := s.SaveToDB()
+		if err != nil {
+			return
+		}
+
+		log.Printf("new backup to DB created")
 	}
 }
 

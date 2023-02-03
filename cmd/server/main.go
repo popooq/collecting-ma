@@ -24,7 +24,7 @@ func main() {
 	database := pgdb.New(context, config, storage)
 	handler := handlers.New(storage, hasher, database)
 	router := router.New(handler)
-	safe, err := backuper.NewSaver(storage, config, encoder, database)
+	saver, err := backuper.NewSaver(storage, config, encoder, database)
 	if err != nil {
 		log.Printf("error during create new saver %s", err)
 	}
@@ -41,11 +41,16 @@ func main() {
 		}
 	}
 
-	if database != nil {
+	if config.DBAddress == "" {
+		go saver.GoFile()
+	}
+
+	log.Print(database)
+	if database == nil {
 		database.CreateTable()
 	}
 
-	go safe.Saver()
+	go saver.GoDB()
 
 	log.Fatal(http.ListenAndServe(config.Address, handlers.GzipHandler(router)))
 }
