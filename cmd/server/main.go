@@ -43,14 +43,13 @@ func main() {
 
 	if config.DBAddress == "" {
 		go saver.GoFile()
+	} else {
+
+		if database == nil {
+			database.CreateTable()
+		}
+
+		go saver.GoDB()
 	}
-
-	log.Print(database)
-	if database == nil {
-		database.CreateTable()
-	}
-
-	go saver.GoDB()
-
 	log.Fatal(http.ListenAndServe(config.Address, handlers.GzipHandler(router)))
 }
