@@ -53,6 +53,18 @@ func (db *DataBase) CreateTable() {
 	}
 }
 
+func (db *DataBase) TruncateMetric() {
+	ctx, cancel := context.WithTimeout(db.ctx, time.Second*3)
+	defer cancel()
+
+	query := "TRUNCATE TABLE metrics;"
+
+	_, err := db.DB.ExecContext(ctx, query)
+	if err != nil {
+		log.Printf("Error during truncate table %s", err)
+	}
+}
+
 func (db *DataBase) InsertMetric(enc encoder.Encode) {
 	ctx, cancel := context.WithTimeout(db.ctx, time.Second*3)
 	defer cancel()

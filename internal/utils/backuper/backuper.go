@@ -137,6 +137,8 @@ func (s *Backuper) SaveToFile() error {
 }
 
 func (s *Backuper) SaveToDB() error {
+	s.DB.TruncateMetric()
+
 	for k, v := range s.storage.MetricsGauge {
 		v := v
 		log.Println(k, v)
@@ -168,8 +170,9 @@ func (s *Backuper) Saver() {
 		<-tickerstore.C
 
 		if s.cfg.DBAddress != "" {
+			log.Print(s.cfg.DBAddress)
 
-			s.DB.CreateTable()
+			s.DB.TruncateMetric()
 
 			err := s.SaveToDB()
 			if err != nil {

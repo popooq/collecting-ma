@@ -41,6 +41,10 @@ func main() {
 		}
 	}
 
+	if database != nil {
+		database.CreateTable()
+	}
+
 	go safe.Saver()
 
 	log.Fatal(http.ListenAndServe(config.Address, handlers.GzipHandler(router)))
