@@ -28,6 +28,7 @@ func New(ctx context.Context, cfg *config.Config, str *storage.MetricsStorage) *
 	if err != nil {
 		log.Printf("Unable to connect to database: %v\n", err)
 	}
+	log.Print(cfg.DBAddress)
 	return &DataBase{
 		DB:  db,
 		ctx: ctx,

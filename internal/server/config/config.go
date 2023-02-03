@@ -20,7 +20,7 @@ type Config struct {
 func New() *Config {
 	var (
 		cfg       Config
-		storeTime = time.Second * 300
+		storeTime = time.Second * 5
 	)
 
 	flag.StringVar(&cfg.Address, "a", "127.0.0.1:8080", "set server listening address")

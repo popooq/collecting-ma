@@ -82,7 +82,7 @@ func (s *Backuper) SaveToFile() error {
 	for k, v := range s.storage.MetricsGauge {
 		v := v
 
-		s.fillEnc(k, "gauge", v, *s.enc.Delta)
+		s.fillEncGauge(k, "gauge", v)
 
 		data, err := s.enc.Marshall()
 		if err != nil {
@@ -108,7 +108,7 @@ func (s *Backuper) SaveToFile() error {
 	for k, d := range s.storage.MetricsCounter {
 		d := d
 
-		s.fillEnc(k, "counter", *s.enc.Value, d)
+		s.fillEncCounter(k, "counter", d)
 
 		data, err := s.enc.Marshall()
 		if err != nil {
@@ -132,18 +132,30 @@ func (s *Backuper) SaveToFile() error {
 	}
 
 	_, _ = s.writer.WriteString("{}]")
-
+	log.Print("new save to file")
 	return s.writer.Flush()
 }
 
 func (s *Backuper) SaveToDB() error {
 	for k, v := range s.storage.MetricsGauge {
 		v := v
-
-		s.fillEnc(k, "gauge", v, *s.enc.Delta)
+		log.Println(k, v)
+		s.fillEncGauge(k, "gauge", v)
 
 		s.DB.InsertMetric(*s.enc)
 	}
+
+	for k, d := range s.storage.MetricsCounter {
+		d := d
+		log.Println(k, d)
+
+		s.fillEncCounter(k, "counter", d)
+
+		s.DB.InsertMetric(*s.enc)
+	}
+
+	log.Print("new save to DB")
+
 	err := fmt.Errorf("error")
 	return err
 
@@ -156,10 +168,14 @@ func (s *Backuper) Saver() {
 		<-tickerstore.C
 
 		if s.cfg.DBAddress != "" {
+
+			s.DB.CreateTable()
+
 			err := s.SaveToDB()
 			if err != nil {
 				return
 			}
+
 		}
 		err := s.SaveToFile()
 		if err != nil {
@@ -202,9 +218,14 @@ func (l *Loader) LoadFromFile() error {
 	return nil
 }
 
-func (s *Backuper) fillEnc(k, mtype string, v float64, d int64) {
+func (s *Backuper) fillEncGauge(k, mtype string, v float64) {
 	s.enc.ID = k
 	s.enc.MType = mtype
 	s.enc.Value = &v
+}
+
+func (s *Backuper) fillEncCounter(k, mtype string, d int64) {
+	s.enc.ID = k
+	s.enc.MType = mtype
 	s.enc.Delta = &d
 }
