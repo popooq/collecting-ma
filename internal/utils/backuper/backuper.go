@@ -3,7 +3,6 @@ package backuper
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"os"
@@ -75,10 +74,7 @@ func (s *Backuper) SaveToFile() error {
 	s.file.Truncate(0)
 	_ = s.writer.WriteByte('[')
 	for k, v := range s.storage.MetricsGauge {
-		s.enc.ID = k
-		s.enc.MType = "gauge"
-		s.enc.Value = &v
-		s.enc.Delta = nil
+		s.fillEncGauge(k, v)
 
 		data, err := s.enc.Marshall()
 		if err != nil {
@@ -97,11 +93,8 @@ func (s *Backuper) SaveToFile() error {
 			return err
 		}
 	}
-	for k, v := range s.storage.MetricsCounter {
-		s.enc.ID = k
-		s.enc.MType = "counter"
-		s.enc.Value = nil
-		s.enc.Delta = &v
+	for k, d := range s.storage.MetricsCounter {
+		s.fillEncCounter(k, d)
 
 		data, err := s.enc.Marshall()
 		if err != nil {
@@ -124,33 +117,6 @@ func (s *Backuper) SaveToFile() error {
 	return s.writer.Flush()
 }
 
-func (s *Backuper) SaveToDB() error {
-	//s.DB.TruncateMetric()
-
-	for k, v := range s.storage.MetricsGauge {
-		v := v
-		log.Println(k, v)
-		s.fillEncGauge(k, "gauge", v)
-
-		s.DB.InsertMetric(*s.enc)
-	}
-
-	for k, d := range s.storage.MetricsCounter {
-		d := d
-		log.Println(k, d)
-
-		s.fillEncCounter(k, "counter", d)
-
-		s.DB.InsertMetric(*s.enc)
-	}
-
-	log.Print("new save to DB")
-
-	err := fmt.Errorf("error")
-	return err
-
-}
-
 func (s *Backuper) GoFile() {
 	tickerstore := time.NewTicker(s.cfg.StoreInterval)
 
@@ -163,21 +129,6 @@ func (s *Backuper) GoFile() {
 		}
 
 		log.Printf("new backup to file created")
-	}
-}
-
-func (s *Backuper) GoDB() {
-	tickerstore := time.NewTicker(s.cfg.StoreInterval)
-
-	for {
-		<-tickerstore.C
-
-		err := s.SaveToDB()
-		if err != nil {
-			return
-		}
-
-		log.Printf("new backup to DB created")
 	}
 }
 
@@ -215,14 +166,14 @@ func (l *Loader) LoadFromFile() error {
 	return nil
 }
 
-func (s *Backuper) fillEncGauge(k, mtype string, v float64) {
+func (s *Backuper) fillEncGauge(k string, v float64) {
 	s.enc.ID = k
-	s.enc.MType = mtype
+	s.enc.MType = "gauge"
 	s.enc.Value = &v
 }
 
-func (s *Backuper) fillEncCounter(k, mtype string, d int64) {
+func (s *Backuper) fillEncCounter(k string, d int64) {
 	s.enc.ID = k
-	s.enc.MType = mtype
+	s.enc.MType = "counter"
 	s.enc.Delta = &d
 }
