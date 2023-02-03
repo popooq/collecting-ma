@@ -45,7 +45,7 @@ func (db *DataBase) CreateTable() {
 		"TYPE VARCHAR(10), " +
 		"HASH VARCHAR(100), " +
 		"VALUE DOUBLE PRECISION, " +
-		"DELTA INTEGER" +
+		"DELTA BIGINT" +
 		");"
 	_, err := db.DB.ExecContext(ctx, query)
 	if err != nil {
