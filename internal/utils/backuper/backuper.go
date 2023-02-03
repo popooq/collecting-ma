@@ -72,67 +72,56 @@ func (s *Backuper) Close() error {
 }
 
 func (s *Backuper) SaveToFile() error {
-	err := s.file.Truncate(0)
-	if err != nil {
-		return fmt.Errorf("err %w", err)
-	}
-
+	s.file.Truncate(0)
 	_ = s.writer.WriteByte('[')
-
 	for k, v := range s.storage.MetricsGauge {
-		v := v
-
-		s.fillEncGauge(k, "gauge", v)
-
-		data, err := s.enc.Marshall()
-		if err != nil {
-			return err
-		}
-
-		_, err = s.writer.Write(data)
-		if err != nil {
-			return err
-		}
-
-		err = s.writer.WriteByte(',')
-		if err != nil {
-			return err
-		}
-
-		err = s.writer.WriteByte('\n')
-		if err != nil {
-			return err
-		}
-	}
-
-	for k, d := range s.storage.MetricsCounter {
-		d := d
-
-		s.fillEncCounter(k, "counter", d)
+		s.enc.ID = k
+		s.enc.MType = "gauge"
+		s.enc.Value = &v
+		s.enc.Delta = nil
 
 		data, err := s.enc.Marshall()
 		if err != nil {
 			return err
 		}
-
 		_, err = s.writer.Write(data)
 		if err != nil {
 			return err
 		}
-
 		err = s.writer.WriteByte(',')
 		if err != nil {
 			return err
 		}
-
 		err = s.writer.WriteByte('\n')
 		if err != nil {
 			return err
 		}
 	}
+	for k, v := range s.storage.MetricsCounter {
+		s.enc.ID = k
+		s.enc.MType = "counter"
+		s.enc.Value = nil
+		s.enc.Delta = &v
 
+		data, err := s.enc.Marshall()
+		if err != nil {
+			return err
+		}
+		_, err = s.writer.Write(data)
+		if err != nil {
+			return err
+		}
+		err = s.writer.WriteByte(',')
+		if err != nil {
+			return err
+		}
+		err = s.writer.WriteByte('\n')
+		if err != nil {
+			return err
+		}
+	}
 	_, _ = s.writer.WriteString("{}]")
-	log.Print("new save to file")
+	log.Printf("new backup created")
 	return s.writer.Flush()
 }
 
