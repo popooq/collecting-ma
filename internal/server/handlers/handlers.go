@@ -216,6 +216,7 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	log.Println(encoder)
 	encoder.Hash = ms.hasher.Hasher(encoder)
 
 	err = ms.hasher.HashChecker(encoder.Hash, *encoder)
