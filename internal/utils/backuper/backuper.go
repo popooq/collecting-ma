@@ -125,7 +125,7 @@ func (s *Backuper) SaveToFile() error {
 }
 
 func (s *Backuper) SaveToDB() error {
-	s.DB.TruncateMetric()
+	//s.DB.TruncateMetric()
 
 	for k, v := range s.storage.MetricsGauge {
 		v := v
