@@ -41,6 +41,9 @@ func main() {
 		}
 	}
 
+	if database != nil {
+		database.CreateTable()
+	}
 	go saver.GoFile()
 
 	log.Fatal(http.ListenAndServe(config.Address, handlers.GzipHandler(router)))

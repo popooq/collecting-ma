@@ -78,6 +78,7 @@ func (db *DataBase) InsertMetric(enc encoder.Encode) {
 	if err != nil {
 		log.Printf("Error during insert a new DB %s", err)
 	}
+	log.Printf("metric %s send to the storage", enc.ID)
 }
 
 func (db *DataBase) ReturnCntext() context.Context {

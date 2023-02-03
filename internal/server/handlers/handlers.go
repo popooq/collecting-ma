@@ -169,7 +169,9 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 
 	encoder.Hash = ms.hasher.Hasher(encoder)
 
-	ms.db.InsertMetric(*encoder)
+	if ms.db != nil {
+		ms.db.InsertMetric(*encoder)
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

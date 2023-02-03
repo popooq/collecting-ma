@@ -128,7 +128,6 @@ func (s *Backuper) GoFile() {
 			return
 		}
 
-		log.Printf("new backup to file created")
 	}
 }
 
