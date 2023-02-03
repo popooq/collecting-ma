@@ -41,15 +41,13 @@ func main() {
 		}
 	}
 
-	if config.DBAddress == "" {
-		go saver.GoFile()
-	} else {
-
+	if config.DBAddress != "" {
 		if database == nil {
 			database.CreateTable()
 		}
-
 		go saver.GoDB()
 	}
+	go saver.GoFile()
+
 	log.Fatal(http.ListenAndServe(config.Address, handlers.GzipHandler(router)))
 }
