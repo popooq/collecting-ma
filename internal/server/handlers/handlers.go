@@ -263,26 +263,9 @@ func (ms MetricStorage) CollectDBMetrics(w http.ResponseWriter, r *http.Request)
 	}
 
 	for _, metric := range Metrics {
-		switch {
-		case metric.MType == gauge:
-			ms.storage.InsertMetric(metric.ID, *metric.Value)
-			metric.Value, err = ms.storage.GetMetricJSONGauge(metric.ID)
-			metric.Delta = nil
-			if err != nil {
-				http.Error(w, "This metric doesn't exist", http.StatusNotFound)
-				return
-			}
-		case metric.MType == counter:
-			ms.storage.CountCounterMetric(metric.ID, *metric.Delta)
-			metric.Delta, err = ms.storage.GetMetricJSONCounter(metric.ID)
-			metric.Value = nil
-			if err != nil {
-				http.Error(w, "This metric doesn't exist", http.StatusNotFound)
-				return
-			}
-		default:
-			http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
-			return
+		err = ms.storage.InsertMetrics(metric)
+		if err != nil {
+			http.Error(w, fmt.Sprint(err), http.StatusInternalServerError)
 		}
 
 		err = ms.addMetrics(&metric)
@@ -297,8 +280,8 @@ func (ms MetricStorage) CollectDBMetrics(w http.ResponseWriter, r *http.Request)
 	w.Write(nil)
 }
 
-func (ms MetricStorage) addMetrics(metrics *encoder.Encode) error {
-	ms.db.Buffer = append(ms.db.Buffer, *metrics)
+func (ms MetricStorage) addMetrics(metric *encoder.Encode) error {
+	ms.db.Buffer = append(ms.db.Buffer, *metric)
 
 	if cap(ms.db.Buffer) == len(ms.db.Buffer) {
 		err := ms.db.Flush()

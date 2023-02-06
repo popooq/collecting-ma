@@ -3,6 +3,8 @@ package storage
 import (
 	"fmt"
 	"sync"
+
+	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 )
 
 type (
@@ -16,6 +18,7 @@ type (
 		GetMetricJSONCounter(name string) (*int64, error)
 		GetBackupCounter(id string, delta int64)
 		GetBackupGauge(id string, delta float64)
+		InsertMetrics(metric encoder.Encode) error
 	}
 
 	MetricsStorage struct {
@@ -24,6 +27,11 @@ type (
 		mu             sync.Mutex
 	}
 	Counter int64
+)
+
+const (
+	gauge   string = "gauge"
+	counter string = "counter"
 )
 
 func New() *MetricsStorage {
@@ -103,6 +111,19 @@ func (ms *MetricsStorage) GetMetricJSONCounter(name string) (*int64, error) {
 	value := uvalue
 
 	return &value, nil
+}
+
+func (ms *MetricsStorage) InsertMetrics(metric encoder.Encode) error {
+	switch {
+	case metric.MType == gauge:
+		ms.InsertMetric(metric.ID, *metric.Value)
+	case metric.MType == counter:
+		ms.CountCounterMetric(metric.ID, *metric.Delta)
+	default:
+		err := fmt.Errorf("this type of metric doesnt't exist")
+		return err
+	}
+	return nil
 }
 
 func (ms *MetricsStorage) GetAllMetrics() []string {
