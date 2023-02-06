@@ -29,7 +29,7 @@ func New(handler handlers.MetricStorage) *chi.Mux {
 		router.Post("/value/", func(w http.ResponseWriter, r *http.Request) {
 			handler.MetricJSONValue(w, r)
 		})
-		router.Post("updates", func(w http.ResponseWriter, r *http.Request) {
+		router.Post("/updates/", func(w http.ResponseWriter, r *http.Request) {
 			handler.CollectDBMetrics(w, r)
 		})
 		router.Get("/", func(w http.ResponseWriter, r *http.Request) {
