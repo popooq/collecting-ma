@@ -3,6 +3,8 @@ package handlers
 import (
 	"compress/gzip"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -245,6 +247,66 @@ func (ms MetricStorage) PingDB(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write(nil)
+}
+
+func (ms MetricStorage) CollectDBMetrics(w http.ResponseWriter, r *http.Request) {
+	var Metrics []encoder.Encode
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("error during ReadAll: %s", err)
+	}
+
+	err = json.Unmarshal(body, &Metrics)
+	if err != nil {
+		log.Printf("error during unmarshalling in handler CollectDBMetrics: %s", err)
+	}
+
+	for _, metric := range Metrics {
+		switch {
+		case metric.MType == gauge:
+			ms.storage.InsertMetric(metric.ID, *metric.Value)
+			metric.Value, err = ms.storage.GetMetricJSONGauge(metric.ID)
+			metric.Delta = nil
+			if err != nil {
+				http.Error(w, "This metric doesn't exist", http.StatusNotFound)
+				return
+			}
+		case metric.MType == counter:
+			ms.storage.CountCounterMetric(metric.ID, *metric.Delta)
+			metric.Delta, err = ms.storage.GetMetricJSONCounter(metric.ID)
+			metric.Value = nil
+			if err != nil {
+				http.Error(w, "This metric doesn't exist", http.StatusNotFound)
+				return
+			}
+		default:
+			http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
+			return
+		}
+
+		err = ms.addMetrics(&metric)
+		if err != nil {
+			log.Printf("error while adding metrics to buffer %s", err)
+		}
+	}
+
+	ms.db.Flush()
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(nil)
+}
+
+func (ms MetricStorage) addMetrics(metrics *encoder.Encode) error {
+	ms.db.Buffer = append(ms.db.Buffer, *metrics)
+
+	if cap(ms.db.Buffer) == len(ms.db.Buffer) {
+		err := ms.db.Flush()
+		if err != nil {
+			return errors.New("cannot add records to the database")
+		}
+	}
+	return nil
 }
 
 func (w gzipWriter) Write(b []byte) (int, error) {
