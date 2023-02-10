@@ -45,7 +45,7 @@ func main() {
 	if dbsaver != nil {
 		dbsaver.CreateTable()
 	}
-	go Storage.Save()
+	//go Storage.Save()
 
 	log.Fatal(http.ListenAndServe(config.Address, handlers.GzipHandler(router)))
 }

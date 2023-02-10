@@ -18,8 +18,6 @@ type (
 		GetMetricCounter(name string) (int64, error)
 		GetMetricJSONGauge(name string) (*float64, error)
 		GetMetricJSONCounter(name string) (*int64, error)
-		GetBackupCounter(id string, delta int64)
-		GetBackupGauge(id string, delta float64)
 		InsertMetrics(metric encoder.Encode) error
 	}
 
@@ -146,6 +144,7 @@ func (ms *MetricsStorage) GetAllMetrics() []encoder.Encode {
 
 	for k, v := range ms.MetricsGauge {
 		var metric encoder.Encode
+		v = ms.MetricsGauge[k]
 		metric.MType = "gauge"
 		metric.ID = k
 		metric.Value = &v
@@ -154,6 +153,7 @@ func (ms *MetricsStorage) GetAllMetrics() []encoder.Encode {
 
 	for k, d := range ms.MetricsCounter {
 		var metric encoder.Encode
+		d = ms.MetricsCounter[k]
 		metric.MType = "gauge"
 		metric.ID = k
 		metric.Delta = &d

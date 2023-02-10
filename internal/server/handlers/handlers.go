@@ -189,7 +189,6 @@ func (h Handler) MetricJSONValue(w http.ResponseWriter, r *http.Request) {
 	case encoder.MType == gauge:
 		gaugeValue, err := h.storage.GetMetricGauge(encoder.ID)
 		if err != nil {
-			log.Println(encoder)
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 
 			return
@@ -200,7 +199,6 @@ func (h Handler) MetricJSONValue(w http.ResponseWriter, r *http.Request) {
 	case encoder.MType == counter:
 		value, err := h.storage.GetMetricCounter(encoder.ID)
 		if err != nil {
-			log.Println(encoder)
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 
 			return

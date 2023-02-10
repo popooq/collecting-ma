@@ -14,106 +14,6 @@ import (
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 )
 
-// type DataBase struct {
-// 	DB  *sql.DB
-// 	ctx context.Context
-// 	cfg *config.Config
-// 	str *storage.MetricsStorage
-
-// 	Buffer []encoder.Encode
-// }
-
-// func New(ctx context.Context, cfg *config.Config, str *storage.MetricsStorage) *DataBase {
-// 	if cfg.DBAddress == "" {
-// 		return nil
-// 	}
-// 	db, err := sql.Open("pgx", cfg.DBAddress)
-// 	if err != nil {
-// 		log.Printf("Unable to connect to database: %v\n", err)
-// 	}
-// 	return &DataBase{
-// 		DB:  db,
-// 		ctx: ctx,
-// 		cfg: cfg,
-// 		str: str,
-
-// 		Buffer: make([]encoder.Encode, 0, 35),
-// 	}
-// }
-
-// func (db *DataBase) CreateTable() {
-// 	ctx, cancel := context.WithTimeout(db.ctx, time.Second*3)
-// 	defer cancel()
-
-// 	query := "CREATE TABLE metrics " +
-// 		"(NAME VARCHAR(30), " +
-// 		"TYPE VARCHAR(10), " +
-// 		"HASH VARCHAR(100), " +
-// 		"VALUE DOUBLE PRECISION, " +
-// 		"DELTA BIGINT" +
-// 		");"
-// 	_, err := db.DB.ExecContext(ctx, query)
-// 	if err != nil {
-// 		log.Printf("Error during creating a new DB %s", err)
-// 	}
-// }
-
-// func (db *DataBase) InsertMetric(enc encoder.Encode) {
-// 	ctx, cancel := context.WithTimeout(db.ctx, time.Second*3)
-// 	defer cancel()
-
-// 	query := "INSERT INTO metrics " +
-// 		"(NAME, TYPE, HASH, VALUE, DELTA) " +
-// 		"VALUES ($1, $2, $3, $4, $5)"
-
-// 	_, err := db.DB.ExecContext(ctx, query,
-// 		enc.ID, enc.MType, enc.Hash, enc.Value, enc.Delta)
-// 	if err != nil {
-// 		log.Printf("Error during insert a new DB %s", err)
-// 	}
-// 	log.Printf("metric %s send to the storage", enc.ID)
-// }
-
-// func (db *DataBase) Flush() error {
-// 	if db.DB == nil {
-// 		err := fmt.Errorf("you haven`t opened the database connection")
-// 		return err
-// 	}
-// 	tx, err := db.DB.Begin()
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	stmt, err := tx.Prepare("INSERT INTO metrics " +
-// 		"(NAME, TYPE, HASH, VALUE, DELTA) " +
-// 		"VALUES ($1, $2, $3, $4, $5)")
-// 	if err != nil {
-// 		return err
-// 	}
-// 	defer stmt.Close()
-
-// 	for _, v := range db.Buffer {
-// 		if _, err = stmt.Exec(v.ID, v.MType, v.Hash, v.Value, v.Delta); err != nil {
-// 			if err = tx.Rollback(); err != nil {
-// 				log.Fatalf("update drivers: unable to rollback: %v", err)
-// 			}
-// 			return err
-// 		}
-// 	}
-
-// 	if err := tx.Commit(); err != nil {
-// 		log.Fatalf("update drivers: unable to commit: %v", err)
-// 		return err
-// 	}
-
-// 	db.Buffer = db.Buffer[:0]
-// 	return nil
-// }
-
-// func (db *DataBase) ReturnCntext() context.Context {
-// 	return db.ctx
-// }
-
 type DBSaver struct {
 	DB  *sql.DB
 	ctx context.Context
@@ -145,12 +45,12 @@ func (s *DBSaver) CreateTable() {
 	ctx, cancel := context.WithTimeout(s.ctx, time.Second*3)
 	defer cancel()
 
-	query := "CREATE TABLE metrics " +
+	query := "CREATE TABLE IF NOT EXISTS metrics " +
 		"(NAME VARCHAR(30), " +
 		"TYPE VARCHAR(10), " +
-		"HASH VARCHAR(100), " +
 		"VALUE DOUBLE PRECISION, " +
-		"DELTA BIGINT" +
+		"DELTA BIGINT, " +
+		"HASH VARCHAR(100)" +
 		");"
 	_, err := s.DB.ExecContext(ctx, query)
 	if err != nil {
@@ -163,11 +63,11 @@ func (s *DBSaver) SaveMetric(metric *encoder.Encode) error {
 	defer cancel()
 
 	query := "INSERT INTO metrics " +
-		"(NAME, TYPE, HASH, VALUE, DELTA) " +
+		"(NAME, TYPE, VALUE, DELTA, HASH) " +
 		"VALUES ($1, $2, $3, $4, $5)"
 
 	_, err := s.DB.ExecContext(ctx, query,
-		metric.ID, metric.MType, metric.Hash, metric.Value, metric.Delta)
+		metric.ID, metric.MType, metric.Value, metric.Delta, metric.Hash)
 	if err != nil {
 		log.Printf("Error during insert a new DB %s", err)
 		return err
@@ -199,15 +99,20 @@ func (s *DBSaver) Flush() error {
 	}
 
 	stmt, err := tx.Prepare("INSERT INTO metrics " +
-		"(NAME, TYPE, HASH, VALUE, DELTA) " +
+		"(NAME, TYPE, VALUE, DELTA, HASH) " +
 		"VALUES ($1, $2, $3, $4, $5)")
 	if err != nil {
 		return err
 	}
-	defer stmt.Close()
+	defer func() {
+		err = stmt.Close()
+		if err != nil {
+			log.Printf("statement error: %s", err)
+		}
+	}()
 
 	for _, v := range s.Buffer {
-		if _, err = stmt.Exec(v.ID, v.MType, v.Hash, v.Value, v.Delta); err != nil {
+		if _, err = stmt.Exec(v.ID, v.MType, float64(*v.Value), int(*v.Delta), v.Hash); err != nil {
 			if err = tx.Rollback(); err != nil {
 				log.Fatalf("update drivers: unable to rollback: %v", err)
 			}
@@ -241,7 +146,7 @@ func (s *DBSaver) LoadMetrics() ([]encoder.Encode, error) {
 
 	for rows.Next() {
 		var enc encoder.Encode
-		err = rows.Scan(&enc.ID, &enc.MType, &enc.Delta, &enc.Value, &enc.Hash)
+		err = rows.Scan(&enc.ID, &enc.MType, &enc.Value, &enc.Delta, &enc.Hash)
 		if err != nil {
 			return nil, err
 		}
