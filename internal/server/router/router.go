@@ -35,9 +35,9 @@ func New(handler handlers.Handler) *chi.Mux {
 		router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 			handler.AllMetrics(w, r)
 		})
-		// router.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
-		// 	handler.PingDB(w, r)
-		// })
+		router.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
+			handler.PingDB(w, r)
+		})
 	})
 
 	return router
