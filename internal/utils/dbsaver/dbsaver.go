@@ -247,6 +247,9 @@ func (s *DBSaver) LoadMetrics() ([]encoder.Encode, error) {
 		}
 		metrics = append(metrics, enc)
 	}
-
+	err = rows.Err()
+	if err != nil {
+		return nil, err
+	}
 	return metrics, nil
 }
