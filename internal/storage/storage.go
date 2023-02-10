@@ -3,7 +3,6 @@ package storage
 import (
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
@@ -25,6 +24,7 @@ type (
 		SaveMetric(metric *encoder.Encode) error
 		SaveAllMetrics(metric encoder.Encode) error
 		LoadMetrics() ([]encoder.Encode, error)
+		KeeperCheck() error
 	}
 
 	MetricsStorage struct {
@@ -190,19 +190,4 @@ func (ms *MetricsStorage) Load() error {
 		}
 	}
 	return nil
-}
-
-func (ms *MetricsStorage) Save() error {
-	tickerstore := time.NewTicker(ms.cfg.StoreInterval)
-
-	for {
-		<-tickerstore.C
-
-		for _, v := range ms.GetAllMetrics() {
-			err := ms.Keeper.SaveAllMetrics(v)
-			if err != nil {
-				return err
-			}
-		}
-	}
 }

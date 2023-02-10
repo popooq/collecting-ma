@@ -229,15 +229,13 @@ func (h Handler) MetricJSONValue(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// func (h Handler) PingDB(w http.ResponseWriter, r *http.Request) {
-// 	ctx, cancel := context.WithTimeout(h.db.ReturnCntext(), time.Second*3)
-// 	defer cancel()
-// 	if err := h.db.DB.PingContext(ctx); err != nil {
-// 		http.Error(w, "DataBase doesn't responce", http.StatusInternalServerError)
-// 	}
-// 	w.WriteHeader(http.StatusOK)
-// 	w.Write(nil)
-// }
+func (h Handler) PingDB(w http.ResponseWriter, r *http.Request) {
+	if err := h.storage.Keeper.KeeperCheck(); err != nil {
+		http.Error(w, "DataBase doesn't responce", http.StatusInternalServerError)
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(nil)
+}
 
 func (h Handler) CollectDBMetrics(w http.ResponseWriter, r *http.Request) {
 	var Metrics []encoder.Encode

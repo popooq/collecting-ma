@@ -102,3 +102,7 @@ func (s *Saver) LoadMetrics() (metrics []encoder.Encode, err error) {
 
 	return metrics, nil
 }
+
+func (s *Saver) KeeperCheck() error {
+	return nil
+}

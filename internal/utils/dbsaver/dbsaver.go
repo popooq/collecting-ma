@@ -158,3 +158,10 @@ func (s *DBSaver) LoadMetrics() ([]encoder.Encode, error) {
 	}
 	return metrics, nil
 }
+
+func (s *DBSaver) KeeperCheck() error {
+	ctx, cancel := context.WithTimeout(s.ctx, time.Second*3)
+	defer cancel()
+	err := s.DB.PingContext(ctx)
+	return err
+}
