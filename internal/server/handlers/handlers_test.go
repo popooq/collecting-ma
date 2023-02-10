@@ -7,16 +7,17 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/hasher"
-	"github.com/popooq/collectimg-ma/internal/utils/pgdb"
 )
 
 func NewRouter() *chi.Mux {
-	MemS := storage.New()
+	var keeper storage.Keeper
+	var cfg config.Config
+	MemS := storage.New(keeper, cfg)
 	hasher := hasher.Mew("")
-	db := &pgdb.DataBase{}
-	handler := New(MemS, hasher, db)
+	handler := New(MemS, hasher)
 
 	MemS.InsertMetric("Alloc", 123.000)
 	MemS.CountCounterMetric("PollCount", 34)

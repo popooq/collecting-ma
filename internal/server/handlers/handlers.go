@@ -2,22 +2,18 @@ package handlers
 
 import (
 	"compress/gzip"
-	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 	"github.com/popooq/collectimg-ma/internal/utils/hasher"
-	"github.com/popooq/collectimg-ma/internal/utils/pgdb"
 )
 
 const (
@@ -26,10 +22,9 @@ const (
 )
 
 type (
-	MetricStorage struct {
+	Handler struct {
 		storage *storage.MetricsStorage
 		hasher  *hasher.Hash
-		db      *pgdb.DataBase
 	}
 	gzipWriter struct {
 		http.ResponseWriter
@@ -37,15 +32,14 @@ type (
 	}
 )
 
-func New(stor *storage.MetricsStorage, hasher *hasher.Hash, db *pgdb.DataBase) MetricStorage {
-	return MetricStorage{
+func New(stor *storage.MetricsStorage, hasher *hasher.Hash) Handler {
+	return Handler{
 		storage: stor,
 		hasher:  hasher,
-		db:      db,
 	}
 }
 
-func (ms MetricStorage) CollectMetrics(w http.ResponseWriter, r *http.Request) {
+func (h Handler) CollectMetrics(w http.ResponseWriter, r *http.Request) {
 	metricTypeParam := chi.URLParam(r, "mType")
 	metricNameParam := chi.URLParam(r, "mName")
 	metricValueParam := chi.URLParam(r, "mValue")
@@ -58,7 +52,7 @@ func (ms MetricStorage) CollectMetrics(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		ms.storage.InsertMetric(metricNameParam, value)
+		h.storage.InsertMetric(metricNameParam, value)
 
 	case metricTypeParam == counter:
 		value, err := strconv.Atoi(metricValueParam)
@@ -67,7 +61,7 @@ func (ms MetricStorage) CollectMetrics(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		ms.storage.CountCounterMetric(metricNameParam, int64(value))
+		h.storage.CountCounterMetric(metricNameParam, int64(value))
 
 	default:
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
@@ -82,7 +76,7 @@ func (ms MetricStorage) CollectMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (ms MetricStorage) MetricValue(w http.ResponseWriter, r *http.Request) {
+func (h Handler) MetricValue(w http.ResponseWriter, r *http.Request) {
 	var metricValue string
 
 	metricTypeParam := chi.URLParam(r, "mType")
@@ -90,7 +84,7 @@ func (ms MetricStorage) MetricValue(w http.ResponseWriter, r *http.Request) {
 
 	switch {
 	case metricTypeParam == gauge:
-		value, err := ms.storage.GetMetricGauge(metricNameParam)
+		value, err := h.storage.GetMetricGauge(metricNameParam)
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
@@ -99,7 +93,7 @@ func (ms MetricStorage) MetricValue(w http.ResponseWriter, r *http.Request) {
 		metricValue = fmt.Sprintf("%.3f", value)
 
 	case metricTypeParam == counter:
-		value, err := ms.storage.GetMetricCounter(metricNameParam)
+		value, err := h.storage.GetMetricCounter(metricNameParam)
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
@@ -121,8 +115,8 @@ func (ms MetricStorage) MetricValue(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (ms MetricStorage) AllMetrics(w http.ResponseWriter, r *http.Request) {
-	allMetrics := ms.storage.GetAllMetrics()
+func (h Handler) AllMetrics(w http.ResponseWriter, r *http.Request) {
+	allMetrics := h.storage.GetAllMetrics()
 	listOfMetrics := fmt.Sprintf("%+v", allMetrics)
 
 	w.Header().Set("Content-Type", "text/html")
@@ -134,7 +128,7 @@ func (ms MetricStorage) AllMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request) {
+func (h Handler) CollectJSONMetric(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("error during ReadAll: %s", err)
@@ -149,16 +143,16 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 
 	switch {
 	case encoder.MType == gauge:
-		ms.storage.InsertMetric(encoder.ID, *encoder.Value)
-		encoder.Value, err = ms.storage.GetMetricJSONGauge(encoder.ID)
+		h.storage.InsertMetric(encoder.ID, *encoder.Value)
+		encoder.Value, err = h.storage.GetMetricJSONGauge(encoder.ID)
 		encoder.Delta = nil
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
 	case encoder.MType == counter:
-		ms.storage.CountCounterMetric(encoder.ID, *encoder.Delta)
-		encoder.Delta, err = ms.storage.GetMetricJSONCounter(encoder.ID)
+		h.storage.CountCounterMetric(encoder.ID, *encoder.Delta)
+		encoder.Delta, err = h.storage.GetMetricJSONCounter(encoder.ID)
 		encoder.Value = nil
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
@@ -169,11 +163,9 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	encoder.Hash = ms.hasher.Hasher(encoder)
+	encoder.Hash = h.hasher.Hasher(encoder)
 
-	if ms.db != nil {
-		ms.db.InsertMetric(*encoder)
-	}
+	h.storage.Keeper.SaveMetric(encoder)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -183,7 +175,7 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) {
+func (h Handler) MetricJSONValue(w http.ResponseWriter, r *http.Request) {
 	encoder := encoder.New()
 
 	err := encoder.Decode(r.Body)
@@ -195,7 +187,7 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 
 	switch {
 	case encoder.MType == gauge:
-		gaugeValue, err := ms.storage.GetMetricGauge(encoder.ID)
+		gaugeValue, err := h.storage.GetMetricGauge(encoder.ID)
 		if err != nil {
 			log.Println(encoder)
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
@@ -206,7 +198,7 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 		encoder.Value = &gaugeValue
 		encoder.Delta = nil
 	case encoder.MType == counter:
-		value, err := ms.storage.GetMetricCounter(encoder.ID)
+		value, err := h.storage.GetMetricCounter(encoder.ID)
 		if err != nil {
 			log.Println(encoder)
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
@@ -224,9 +216,9 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	encoder.Hash = ms.hasher.Hasher(encoder)
+	encoder.Hash = h.hasher.Hasher(encoder)
 
-	err = ms.hasher.HashChecker(encoder.Hash, *encoder)
+	err = h.hasher.HashChecker(encoder.Hash, *encoder)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("error : %s", err), http.StatusBadRequest)
 		return
@@ -239,17 +231,17 @@ func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (ms MetricStorage) PingDB(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(ms.db.ReturnCntext(), time.Second*3)
-	defer cancel()
-	if err := ms.db.DB.PingContext(ctx); err != nil {
-		http.Error(w, "DataBase doesn't responce", http.StatusInternalServerError)
-	}
-	w.WriteHeader(http.StatusOK)
-	w.Write(nil)
-}
+// func (h Handler) PingDB(w http.ResponseWriter, r *http.Request) {
+// 	ctx, cancel := context.WithTimeout(h.db.ReturnCntext(), time.Second*3)
+// 	defer cancel()
+// 	if err := h.db.DB.PingContext(ctx); err != nil {
+// 		http.Error(w, "DataBase doesn't responce", http.StatusInternalServerError)
+// 	}
+// 	w.WriteHeader(http.StatusOK)
+// 	w.Write(nil)
+// }
 
-func (ms MetricStorage) CollectDBMetrics(w http.ResponseWriter, r *http.Request) {
+func (h Handler) CollectDBMetrics(w http.ResponseWriter, r *http.Request) {
 	var Metrics []encoder.Encode
 
 	body, err := io.ReadAll(r.Body)
@@ -263,33 +255,19 @@ func (ms MetricStorage) CollectDBMetrics(w http.ResponseWriter, r *http.Request)
 	}
 
 	for _, metric := range Metrics {
-		err = ms.storage.InsertMetrics(metric)
+		err = h.storage.InsertMetrics(metric)
 		if err != nil {
 			http.Error(w, fmt.Sprint(err), http.StatusInternalServerError)
 		}
 
-		err = ms.addMetrics(&metric)
+		err = h.storage.Keeper.SaveAllMetrics(metric)
 		if err != nil {
 			log.Printf("error while adding metrics to buffer %s", err)
 		}
 	}
 
-	ms.db.Flush()
-
 	w.WriteHeader(http.StatusOK)
 	w.Write(nil)
-}
-
-func (ms MetricStorage) addMetrics(metric *encoder.Encode) error {
-	ms.db.Buffer = append(ms.db.Buffer, *metric)
-
-	if cap(ms.db.Buffer) == len(ms.db.Buffer) {
-		err := ms.db.Flush()
-		if err != nil {
-			return errors.New("cannot add records to the database")
-		}
-	}
-	return nil
 }
 
 func (w gzipWriter) Write(b []byte) (int, error) {

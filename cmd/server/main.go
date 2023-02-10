@@ -9,42 +9,43 @@ import (
 	"github.com/popooq/collectimg-ma/internal/server/handlers"
 	"github.com/popooq/collectimg-ma/internal/server/router"
 	"github.com/popooq/collectimg-ma/internal/storage"
-	"github.com/popooq/collectimg-ma/internal/utils/backuper"
-	"github.com/popooq/collectimg-ma/internal/utils/encoder"
+	"github.com/popooq/collectimg-ma/internal/utils/dbsaver"
+	"github.com/popooq/collectimg-ma/internal/utils/filesaver"
 	"github.com/popooq/collectimg-ma/internal/utils/hasher"
-	"github.com/popooq/collectimg-ma/internal/utils/pgdb"
 )
 
 func main() {
 	context := context.Background()
-	storage := storage.New()
-	encoder := encoder.New()
 	config := config.New()
 	hasher := hasher.Mew(config.Key)
-	database := pgdb.New(context, config, storage)
-	handler := handlers.New(storage, hasher, database)
-	router := router.New(handler)
-	saver, err := backuper.NewSaver(storage, config, encoder, database)
+	dbsaver, err := dbsaver.NewSaver(context, config)
+	if err != nil {
+		log.Printf("error during create new dbsaver %s", err)
+	}
+	saver, err := filesaver.New(config)
 	if err != nil {
 		log.Printf("error during create new saver %s", err)
 	}
+	var Storage *storage.MetricsStorage
+	if config.DBAddress != "" {
+		Storage = storage.New(dbsaver, *config)
+	} else {
+		Storage = storage.New(saver, *config)
+	}
 
+	handler := handlers.New(Storage, hasher)
+	router := router.New(handler)
 	if config.Restore {
-		loader, err := backuper.NewLoader(storage, config, encoder)
-		if err != nil {
-			log.Printf("error during create new loader %s", err)
-		}
-
-		err = loader.LoadFromFile()
+		err = Storage.Load()
 		if err != nil {
 			log.Printf("error during load from file %s", err)
 		}
 	}
 
-	if database != nil {
-		database.CreateTable()
+	if dbsaver != nil {
+		dbsaver.CreateTable()
 	}
-	go saver.GoFile()
+	go Storage.Save()
 
 	log.Fatal(http.ListenAndServe(config.Address, handlers.GzipHandler(router)))
 }

@@ -3,7 +3,9 @@ package storage
 import (
 	"fmt"
 	"sync"
+	"time"
 
+	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 )
 
@@ -21,7 +23,15 @@ type (
 		InsertMetrics(metric encoder.Encode) error
 	}
 
+	Keeper interface {
+		SaveMetric(metric *encoder.Encode) error
+		SaveAllMetrics(metric encoder.Encode) error
+		LoadMetrics() ([]encoder.Encode, error)
+	}
+
 	MetricsStorage struct {
+		Keeper         Keeper
+		cfg            config.Config
 		MetricsGauge   map[string]float64
 		MetricsCounter map[string]int64
 		mu             sync.Mutex
@@ -34,13 +44,15 @@ const (
 	counter string = "counter"
 )
 
-func New() *MetricsStorage {
-	var ms MetricsStorage
-	ms.mu = sync.Mutex{}
-	ms.MetricsGauge = make(map[string]float64)
-	ms.MetricsCounter = make(map[string]int64)
+func New(Keeper Keeper, cfg config.Config) *MetricsStorage {
+	return &MetricsStorage{
+		mu:             sync.Mutex{},
+		MetricsGauge:   make(map[string]float64),
+		MetricsCounter: make(map[string]int64),
+		Keeper:         Keeper,
+		cfg:            cfg,
+	}
 
-	return &ms
 }
 
 func (ms *MetricsStorage) InsertMetric(name string, value float64) {
@@ -126,19 +138,25 @@ func (ms *MetricsStorage) InsertMetrics(metric encoder.Encode) error {
 	return nil
 }
 
-func (ms *MetricsStorage) GetAllMetrics() []string {
+func (ms *MetricsStorage) GetAllMetrics() []encoder.Encode {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
-	allMetrics := []string{}
+	var allMetrics []encoder.Encode
 
 	for k, v := range ms.MetricsGauge {
-		metric := fmt.Sprintf("%s - %.3f", k, v)
+		var metric encoder.Encode
+		metric.MType = "gauge"
+		metric.ID = k
+		metric.Value = &v
 		allMetrics = append(allMetrics, metric)
 	}
 
-	for k, v := range ms.MetricsCounter {
-		metric := fmt.Sprintf("%s - %d", k, v)
+	for k, d := range ms.MetricsCounter {
+		var metric encoder.Encode
+		metric.MType = "gauge"
+		metric.ID = k
+		metric.Delta = &d
 		allMetrics = append(allMetrics, metric)
 	}
 
@@ -155,4 +173,36 @@ func (ms *MetricsStorage) GetBackupGauge(id string, value float64) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 	ms.MetricsGauge[id] = value
+}
+
+func (ms *MetricsStorage) Load() error {
+	metrics, err := ms.Keeper.LoadMetrics()
+	if err != nil {
+		return err
+	}
+
+	for _, v := range metrics {
+		switch v.MType {
+		case "gauge":
+			ms.GetBackupGauge(v.ID, *v.Value)
+		case "counter":
+			ms.GetBackupCounter(v.ID, *v.Delta)
+		}
+	}
+	return nil
+}
+
+func (ms *MetricsStorage) Save() error {
+	tickerstore := time.NewTicker(ms.cfg.StoreInterval)
+
+	for {
+		<-tickerstore.C
+
+		for _, v := range ms.GetAllMetrics() {
+			err := ms.Keeper.SaveAllMetrics(v)
+			if err != nil {
+				return err
+			}
+		}
+	}
 }
