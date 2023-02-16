@@ -47,5 +47,6 @@ func main() {
 		}
 	}
 
-	log.Fatal(http.ListenAndServe(config.Address, handlers.GzipHandler(router)))
+	// log.Fatal(http.ListenAndServe(config.Address, handlers.GzipHandler(router)))
+	log.Fatal(http.ListenAndServe(config.Address, router))
 }
