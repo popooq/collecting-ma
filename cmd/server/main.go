@@ -25,9 +25,7 @@ func main() {
 			log.Println(err)
 		}
 		Storage = storage.New(dbsaver, *config)
-		if dbsaver != nil {
-			dbsaver.CreateTable()
-		}
+		dbsaver.Migrate()
 	} else if config.StoreFile != "" {
 		saver, err := filesaver.New(config)
 		if err != nil {

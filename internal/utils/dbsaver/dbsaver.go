@@ -45,7 +45,7 @@ func New(ctx context.Context, cfg *config.Config) (*DBSaver, error) {
 	}, nil
 }
 
-func (s *DBSaver) CreateTable() {
+func (s *DBSaver) Migrate() {
 
 	driver, err := postgres.WithInstance(s.DB, &postgres.Config{})
 	if err != nil {
