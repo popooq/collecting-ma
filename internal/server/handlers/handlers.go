@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
@@ -25,10 +27,10 @@ type (
 		storage *storage.MetricsStorage
 		hasher  *hasher.Hash
 	}
-	// gzipWriter struct {
-	// 	http.ResponseWriter
-	// 	Writer io.Writer
-	// }
+	gzipWriter struct {
+		http.ResponseWriter
+		Writer io.Writer
+	}
 )
 
 func New(stor *storage.MetricsStorage, hasher *hasher.Hash) Handler {
@@ -45,7 +47,7 @@ func (h Handler) Route() *chi.Mux {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.Compress(5, "gzip"))
+	//r.Use(middleware.Compress(5, "gzip"))
 
 	r.Post("/update/{mType}/{mName}/{mValue}", h.collectMetrics)
 	r.Get("/value/{mType}/{mName}", h.metricValue)
@@ -285,20 +287,24 @@ func (h Handler) collectDBMetrics(w http.ResponseWriter, r *http.Request) {
 	w.Write(nil)
 }
 
-// func GzipHandler(next http.Handler) http.Handler {
-// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-// 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
-// 			next.ServeHTTP(w, r)
-// 			return
-// 		}
-// 		gzip, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
-// 		if err != nil {
-// 			http.Error(w, err.Error(), http.StatusInternalServerError)
-// 			return
-// 		}
-// 		defer gzip.Close()
+func (w gzipWriter) Write(b []byte) (int, error) {
+	return w.Writer.Write(b)
+}
 
-// 		w.Header().Set("Content-Encoding", "gzip")
-// 		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gzip}, r)
-// 	})
-// }
+func GzipHandler(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+			next.ServeHTTP(w, r)
+			return
+		}
+		gzip, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer gzip.Close()
+
+		w.Header().Set("Content-Encoding", "gzip")
+		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gzip}, r)
+	})
+}
