@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/hasher"
@@ -23,23 +22,7 @@ func NewRouter() *chi.Mux {
 	MemS.CountCounterMetric("PollCount", 34)
 
 	r := chi.NewRouter()
-
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-
-	r.Route("/", func(r chi.Router) {
-		r.Post("/update/{mType}/{mName}/{mValue}", func(w http.ResponseWriter, r *http.Request) {
-			handler.CollectMetrics(w, r)
-		})
-		r.Get("/value/{mType}/{mName}", func(w http.ResponseWriter, r *http.Request) {
-			handler.MetricValue(w, r)
-		})
-		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			handler.AllMetrics(w, r)
-		})
-	})
+	r.Mount("/", handler.Route())
 
 	return r
 }

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
@@ -39,7 +40,26 @@ func New(stor *storage.MetricsStorage, hasher *hasher.Hash) Handler {
 	}
 }
 
-func (h Handler) CollectMetrics(w http.ResponseWriter, r *http.Request) {
+func (h Handler) Route() *chi.Mux {
+	r := chi.NewRouter()
+
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+
+	r.Post("/update/{mType}/{mName}/{mValue}", h.collectMetrics)
+	r.Get("/value/{mType}/{mName}", h.metricValue)
+	r.Post("/update/", h.collectJSONMetric)
+	r.Post("/value/", h.metricJSONValue)
+	r.Post("/updates/", h.collectDBMetrics)
+	r.Get("/", h.allMetrics)
+	r.Get("/ping", h.pingDB)
+
+	return r
+}
+
+func (h Handler) collectMetrics(w http.ResponseWriter, r *http.Request) {
 	metricTypeParam := chi.URLParam(r, "mType")
 	metricNameParam := chi.URLParam(r, "mName")
 	metricValueParam := chi.URLParam(r, "mValue")
@@ -76,7 +96,7 @@ func (h Handler) CollectMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h Handler) MetricValue(w http.ResponseWriter, r *http.Request) {
+func (h Handler) metricValue(w http.ResponseWriter, r *http.Request) {
 	var metricValue string
 
 	metricTypeParam := chi.URLParam(r, "mType")
@@ -115,7 +135,7 @@ func (h Handler) MetricValue(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h Handler) AllMetrics(w http.ResponseWriter, r *http.Request) {
+func (h Handler) allMetrics(w http.ResponseWriter, r *http.Request) {
 	allMetrics := h.storage.GetAllMetrics()
 	listOfMetrics := fmt.Sprintf("%+v", allMetrics)
 
@@ -128,7 +148,7 @@ func (h Handler) AllMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h Handler) CollectJSONMetric(w http.ResponseWriter, r *http.Request) {
+func (h Handler) collectJSONMetric(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("error during ReadAll: %s", err)
@@ -175,7 +195,7 @@ func (h Handler) CollectJSONMetric(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h Handler) MetricJSONValue(w http.ResponseWriter, r *http.Request) {
+func (h Handler) metricJSONValue(w http.ResponseWriter, r *http.Request) {
 	encoder := encoder.New()
 
 	err := encoder.Decode(r.Body)
@@ -229,7 +249,7 @@ func (h Handler) MetricJSONValue(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h Handler) PingDB(w http.ResponseWriter, r *http.Request) {
+func (h Handler) pingDB(w http.ResponseWriter, r *http.Request) {
 	if err := h.storage.Keeper.KeeperCheck(); err != nil {
 		http.Error(w, "DataBase doesn't responce", http.StatusInternalServerError)
 	}
@@ -237,7 +257,7 @@ func (h Handler) PingDB(w http.ResponseWriter, r *http.Request) {
 	w.Write(nil)
 }
 
-func (h Handler) CollectDBMetrics(w http.ResponseWriter, r *http.Request) {
+func (h Handler) collectDBMetrics(w http.ResponseWriter, r *http.Request) {
 	var Metrics []encoder.Encode
 
 	body, err := io.ReadAll(r.Body)
@@ -264,10 +284,6 @@ func (h Handler) CollectDBMetrics(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	w.Write(nil)
-}
-
-func (w gzipWriter) Write(b []byte) (int, error) {
-	return w.Writer.Write(b)
 }
 
 func GzipHandler(next http.Handler) http.Handler {

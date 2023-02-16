@@ -8,6 +8,10 @@ import (
 	"log"
 	"time"
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/github"
 	_ "github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/popooq/collectimg-ma/internal/server/config"
@@ -22,7 +26,7 @@ type DBSaver struct {
 	Buffer []encoder.Encode
 }
 
-func NewSaver(ctx context.Context, cfg *config.Config) (*DBSaver, error) {
+func New(ctx context.Context, cfg *config.Config) (*DBSaver, error) {
 	if cfg.DBAddress == "" {
 		err := fmt.Errorf("there is no DB address")
 		return nil, err
@@ -42,20 +46,24 @@ func NewSaver(ctx context.Context, cfg *config.Config) (*DBSaver, error) {
 }
 
 func (s *DBSaver) CreateTable() {
-	ctx, cancel := context.WithTimeout(s.ctx, time.Second*3)
-	defer cancel()
 
-	query := "CREATE TABLE IF NOT EXISTS metrics " +
-		"(NAME VARCHAR(30), " +
-		"TYPE VARCHAR(10), " +
-		"VALUE DOUBLE PRECISION, " +
-		"DELTA BIGINT, " +
-		"HASH VARCHAR(100)" +
-		");"
-	_, err := s.DB.ExecContext(ctx, query)
+	driver, err := postgres.WithInstance(s.DB, &postgres.Config{})
 	if err != nil {
-		log.Printf("Error during creating a new DB %s", err)
+		log.Println(err)
 	}
+
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://./migrations",
+		s.cfg.DBAddress,
+		driver)
+	if err != nil {
+		log.Println(err)
+	}
+
+	if err = m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		log.Println(err)
+	}
+
 }
 
 func (s *DBSaver) SaveMetric(metric *encoder.Encode) error {
