@@ -34,10 +34,17 @@ type (
 )
 
 func New(stor *storage.MetricsStorage, hasher *hasher.Hash) Handler {
+	if stor.Cfg.Restore {
+		err := stor.Load()
+		if err != nil {
+			log.Printf("error during load from file %s", err)
+		}
+	}
 	return Handler{
 		storage: stor,
 		hasher:  hasher,
 	}
+
 }
 
 func (h Handler) Route() *chi.Mux {
@@ -47,7 +54,6 @@ func (h Handler) Route() *chi.Mux {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
-	//r.Use(middleware.Compress(5, "gzip"))
 
 	r.Post("/update/{mType}/{mName}/{mValue}", h.collectMetrics)
 	r.Get("/value/{mType}/{mName}", h.metricValue)

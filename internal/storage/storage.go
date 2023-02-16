@@ -29,7 +29,7 @@ type (
 
 	MetricsStorage struct {
 		Keeper         Keeper
-		cfg            config.Config
+		Cfg            config.Config
 		MetricsGauge   map[string]float64
 		MetricsCounter map[string]int64
 		mu             sync.Mutex
@@ -48,7 +48,7 @@ func New(Keeper Keeper, cfg config.Config) *MetricsStorage {
 		MetricsGauge:   make(map[string]float64),
 		MetricsCounter: make(map[string]int64),
 		Keeper:         Keeper,
-		cfg:            cfg,
+		Cfg:            cfg,
 	}
 
 }

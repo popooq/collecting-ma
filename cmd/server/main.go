@@ -40,13 +40,5 @@ func main() {
 	router := chi.NewRouter()
 	router.Mount("/", handler.Route())
 
-	if config.Restore {
-		err := Storage.Load()
-		if err != nil {
-			log.Printf("error during load from file %s", err)
-		}
-	}
-
 	log.Fatal(http.ListenAndServe(config.Address, handlers.GzipHandler(router)))
-	// log.Fatal(http.ListenAndServe(config.Address, router))
 }
