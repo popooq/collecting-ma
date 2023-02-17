@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 )
 
@@ -28,8 +27,8 @@ type (
 	}
 
 	MetricsStorage struct {
-		Keeper         Keeper
-		Cfg            config.Config
+		Keeper Keeper
+		//Cfg            config.Config
 		MetricsGauge   map[string]float64
 		MetricsCounter map[string]int64
 		mu             sync.Mutex
@@ -42,13 +41,12 @@ const (
 	counter string = "counter"
 )
 
-func New(Keeper Keeper, cfg config.Config) *MetricsStorage {
+func New(Keeper Keeper) *MetricsStorage {
 	return &MetricsStorage{
 		mu:             sync.Mutex{},
 		MetricsGauge:   make(map[string]float64),
 		MetricsCounter: make(map[string]int64),
 		Keeper:         Keeper,
-		Cfg:            cfg,
 	}
 
 }

@@ -7,19 +7,16 @@ import (
 	"log"
 	"os"
 
-	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 )
 
 type Saver struct {
-	cfg *config.Config
-
 	file       *os.File
 	readwriter *bufio.ReadWriter
 }
 
-func New(cfg *config.Config) (*Saver, error) {
-	file, err := os.OpenFile(cfg.StoreFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o777)
+func New(storefile string) (*Saver, error) {
+	file, err := os.OpenFile(storefile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o777)
 	if err != nil {
 		return nil, err
 	}
@@ -28,8 +25,6 @@ func New(cfg *config.Config) (*Saver, error) {
 	writer := bufio.NewWriter(file)
 
 	return &Saver{
-		cfg: cfg,
-
 		file:       file,
 		readwriter: bufio.NewReadWriter(reader, writer),
 	}, nil

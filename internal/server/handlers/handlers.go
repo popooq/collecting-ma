@@ -33,8 +33,8 @@ type (
 	}
 )
 
-func New(stor *storage.MetricsStorage, hasher *hasher.Hash) Handler {
-	if stor.Cfg.Restore {
+func New(stor *storage.MetricsStorage, hasher *hasher.Hash, restore bool) Handler {
+	if restore {
 		err := stor.Load()
 		if err != nil {
 			log.Printf("error during load from file %s", err)

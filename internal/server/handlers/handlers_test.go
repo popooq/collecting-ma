@@ -14,9 +14,9 @@ import (
 func NewRouter() *chi.Mux {
 	var keeper storage.Keeper
 	var cfg config.Config
-	MemS := storage.New(keeper, cfg)
+	MemS := storage.New(keeper)
 	hasher := hasher.Mew("")
-	handler := New(MemS, hasher)
+	handler := New(MemS, hasher, cfg.Restore)
 
 	MemS.InsertMetric("Alloc", 123.000)
 	MemS.CountCounterMetric("PollCount", 34)

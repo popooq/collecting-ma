@@ -20,21 +20,21 @@ func main() {
 	config := config.New()
 	hasher := hasher.Mew(config.Key)
 	if config.DBAddress != "" {
-		dbsaver, err := dbsaver.New(context, config)
+		dbsaver, err := dbsaver.New(context, config.DBAddress)
 		if err != nil {
 			log.Println(err)
 		}
-		Storage = storage.New(dbsaver, *config)
+		Storage = storage.New(dbsaver)
 		dbsaver.Migrate()
 	} else if config.StoreFile != "" {
-		saver, err := filesaver.New(config)
+		saver, err := filesaver.New(config.StoreFile)
 		if err != nil {
 			log.Println(err)
 		}
-		Storage = storage.New(saver, *config)
+		Storage = storage.New(saver)
 	}
 
-	handler := handlers.New(Storage, hasher)
+	handler := handlers.New(Storage, hasher, config.Restore)
 	router := chi.NewRouter()
 	router.Mount("/", handler.Route())
 

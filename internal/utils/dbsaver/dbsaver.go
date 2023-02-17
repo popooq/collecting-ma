@@ -14,24 +14,24 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
-	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 )
 
 type DBSaver struct {
 	DB  *sql.DB
 	ctx context.Context
-	cfg *config.Config
+	//cfg *config.Config
+	dBA string
 
 	Buffer []encoder.Encode
 }
 
-func New(ctx context.Context, cfg *config.Config) (*DBSaver, error) {
-	if cfg.DBAddress == "" {
+func New(ctx context.Context, dBA string) (*DBSaver, error) {
+	if dBA == "" {
 		err := fmt.Errorf("there is no DB address")
 		return nil, err
 	}
-	db, err := sql.Open("pgx", cfg.DBAddress)
+	db, err := sql.Open("pgx", dBA)
 	if err != nil {
 		log.Printf("Unable to connect to database: %v\n", err)
 		return nil, err
@@ -39,7 +39,8 @@ func New(ctx context.Context, cfg *config.Config) (*DBSaver, error) {
 	return &DBSaver{
 		DB:  db,
 		ctx: ctx,
-		cfg: cfg,
+		//	cfg: cfg,
+		dBA: dBA,
 
 		Buffer: make([]encoder.Encode, 0, 35),
 	}, nil
@@ -54,7 +55,7 @@ func (s *DBSaver) Migrate() {
 
 	m, err := migrate.NewWithDatabaseInstance(
 		"file://./internal/utils/dbsaver/migrations",
-		s.cfg.DBAddress,
+		s.dBA,
 		driver)
 	if err != nil {
 		log.Println(err)
