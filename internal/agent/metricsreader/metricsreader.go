@@ -7,7 +7,6 @@ import (
 
 	"github.com/popooq/collectimg-ma/internal/agent/sender"
 	"github.com/popooq/collectimg-ma/internal/storage"
-	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
 )
 
@@ -28,21 +27,10 @@ func New(sndr sender.Sender, tickerpoll time.Duration, tickerreport time.Duratio
 	}
 }
 
-func (r *Reader) runMemStatReader(mem *runtime.MemStats) {
-	runtime.ReadMemStats(mem)
-	r.pollCount++
-}
-
-func (r *Reader) runVirtMemCpuListener(stats *mem.VirtualMemoryStat, cpuInfo *[]float64) {
-	stats, _ = mem.VirtualMemory()
-	*cpuInfo, _ = cpu.Percent(0, false)
-	r.pollCount++
-}
-
 func (r *Reader) Run() {
 	var (
 		memStat      runtime.MemStats
-		memStats     *mem.VirtualMemoryStat
+		memoryStat   *mem.VirtualMemoryStat
 		cpuUsage     []float64
 		tickerpoll   = time.NewTicker(r.tickerpoll)
 		tickerreport = time.NewTicker(r.tickerreport)
@@ -51,8 +39,8 @@ func (r *Reader) Run() {
 	for {
 		select {
 		case <-tickerpoll.C:
-			go r.runMemStatReader(&memStat)
-			go r.runVirtMemCpuListener(memStats, &cpuUsage)
+			runtime.ReadMemStats(&memStat)
+			memoryStat, _ = mem.VirtualMemory()
 		case <-tickerreport.C:
 			mem := memStat
 			random := float64(rand.Uint32())
@@ -85,8 +73,8 @@ func (r *Reader) Run() {
 			r.sndr.Go(float64(mem.StackSys), "StackSys", r.address)
 			r.sndr.Go(float64(mem.Sys), "Sys", r.address)
 			r.sndr.Go(float64(mem.TotalAlloc), "TotalAlloc", r.address)
-			r.sndr.Go(float64(memStats.Total), "TotalMemory", r.address)
-			r.sndr.Go(float64(memStats.Free), "FreeMemory", r.address)
+			r.sndr.Go(float64(memoryStat.Total), "TotalMemory", r.address)
+			r.sndr.Go(float64(memoryStat.Free), "FreeMemory", r.address)
 			r.sndr.Go(float64(cpuUsage[0]), "CPUutilization1", r.address)
 		}
 	}
