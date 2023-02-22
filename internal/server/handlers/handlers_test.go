@@ -6,43 +6,28 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/storage"
-	"github.com/popooq/collectimg-ma/internal/utils/encoder"
+	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
 
-func NewRouter() chi.Router {
-
-	MemS := storage.NewMetricStorage()
-	metricStruct := encoder.NewEncoderMetricsStruct()
-	handler := NewMetricStorage(MemS, metricStruct)
+func NewRouter() *chi.Mux {
+	var keeper storage.Keeper
+	var cfg config.Config
+	MemS := storage.New(keeper)
+	hasher := hasher.Mew("")
+	handler := New(MemS, hasher, cfg.Restore)
 
 	MemS.InsertMetric("Alloc", 123.000)
 	MemS.CountCounterMetric("PollCount", 34)
 
 	r := chi.NewRouter()
+	r.Mount("/", handler.Route())
 
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-
-	r.Route("/", func(r chi.Router) {
-		r.Post("/update/{mType}/{mName}/{mValue}", func(w http.ResponseWriter, r *http.Request) {
-			handler.CollectMetrics(w, r)
-		})
-		r.Get("/value/{mType}/{mName}", func(w http.ResponseWriter, r *http.Request) {
-			handler.MetricValue(w, r)
-		})
-		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-			handler.AllMetrics(w, r)
-		})
-	})
 	return r
 }
 
 func TestMetricStorageServeHTTP(t *testing.T) {
-
 	tests := []struct {
 		name string
 		url  string
@@ -69,7 +54,7 @@ func TestMetricStorageServeHTTP(t *testing.T) {
 			code: 400,
 		},
 		{
-			name: "Negative test: Unkonwn metric",
+			name: "Negative test: Unknown metric",
 			url:  "/update/unknown/poop/111",
 			code: 501,
 		},
@@ -96,7 +81,6 @@ func TestMetricStorageServeHTTP(t *testing.T) {
 }
 
 func TestMetricStorageAllMetrics(t *testing.T) {
-
 	tests := []struct {
 		name string
 		url  string
@@ -125,7 +109,6 @@ func TestMetricStorageAllMetrics(t *testing.T) {
 }
 
 func TestMetricStorageMetricValue(t *testing.T) {
-
 	tests := []struct {
 		name string
 		url  string
@@ -137,9 +120,9 @@ func TestMetricStorageMetricValue(t *testing.T) {
 			code: 200,
 		},
 		{
-			name: "Positive test Counter",
-			url:  "/value/counter/PollCount",
-			code: 200,
+			name: "Negative test Counter",
+			url:  "/value/counter/PollCoun",
+			code: 404,
 		},
 		{
 			name: "Negative test Gauge",
@@ -147,9 +130,9 @@ func TestMetricStorageMetricValue(t *testing.T) {
 			code: 404,
 		},
 		{
-			name: "Negative test Counter",
-			url:  "/value/counter/PollCoun",
-			code: 404,
+			name: "Positive test Counter",
+			url:  "/value/counter/PollCount",
+			code: 200,
 		},
 		{
 			name: "Negative test Unknown type",

@@ -11,20 +11,29 @@ import (
 type Config struct {
 	Address       string        `env:"ADDRESS"`
 	StoreInterval time.Duration `env:"STORE_INTERVAL"`
-	Storefile     string        `env:"STORE_FILE"`
+	StoreFile     string        `env:"STORE_FILE"`
 	Restore       bool          `env:"RESTORE"`
+	Key           string        `env:"KEY"`
+	DBAddress     string        `env:"DATABASE_DSN"`
 }
 
-func NewServerConfig() *Config {
-	var cfg Config
+func New() *Config {
+	var (
+		cfg       Config
+		storeTime = time.Second * 5
+	)
+
 	flag.StringVar(&cfg.Address, "a", "127.0.0.1:8080", "set server listening address")
-	flag.DurationVar(&cfg.StoreInterval, "i", time.Second*1, "metric backup timer")
-	flag.StringVar(&cfg.Storefile, "f", "/tmp/devops-metrics-db.json", "directory for saving metrics")
+	flag.StringVar(&cfg.Key, "k", "", "hashing key")
+	flag.DurationVar(&cfg.StoreInterval, "i", storeTime, "metric backup timer")
+	flag.StringVar(&cfg.StoreFile, "f", "/tmp/devops-metrics-db.json", "directory for saving metrics")
 	flag.BoolVar(&cfg.Restore, "r", true, "recovering from backup before start")
+	flag.StringVar(&cfg.DBAddress, "d", "", "set the DB address")
 	flag.Parse()
-	err := env.Parse(&cfg)
-	if err != nil {
+
+	if err := env.Parse(&cfg); err != nil {
 		log.Printf("env parse failed :%s", err)
 	}
+
 	return &cfg
 }

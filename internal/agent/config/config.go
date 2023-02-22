@@ -12,17 +12,25 @@ type Config struct {
 	Address        string        `env:"ADDRESS"`
 	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
 	PollInterval   time.Duration `env:"POLL_INTERVAL"`
+	Key            string        `env:"KEY"`
 }
 
-func NewAgentConfig() *Config {
-	var cfg Config
+func New() *Config {
+	var (
+		cfg        Config
+		pollTime   = time.Second * 2
+		reportTime = time.Second * 10
+	)
+
 	flag.StringVar(&cfg.Address, "a", "127.0.0.1:8080", "address of the server")
-	flag.DurationVar(&cfg.PollInterval, "p", time.Second*2, "metric collection timer")
-	flag.DurationVar(&cfg.ReportInterval, "r", time.Second*10, "metric send timer")
+	flag.StringVar(&cfg.Key, "k", "", "hashing key")
+	flag.DurationVar(&cfg.PollInterval, "p", pollTime, "metric collection timer")
+	flag.DurationVar(&cfg.ReportInterval, "r", reportTime, "metric send timer")
 	flag.Parse()
-	err := env.Parse(&cfg)
-	if err != nil {
+
+	if err := env.Parse(&cfg); err != nil {
 		log.Printf("env parse failed :%s", err)
 	}
+
 	return &cfg
 }

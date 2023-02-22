@@ -4,54 +4,90 @@ import (
 	"bytes"
 	"fmt"
 	"log"
-	"net/http"
 	"net/url"
-
 	"strings"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
+	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
 
-var (
-	encoderJSON encoder.Encode
-)
+type Sender struct {
+	hasher *hasher.Hash
+}
 
-func SendMetrics(value any, name, endpoint string) {
+func New(hasher *hasher.Hash) Sender {
+	return Sender{
+		hasher: hasher,
+	}
+}
+
+func (s *Sender) Go(value any, name, endpoint string) {
+	body := s.bodyBuild(value, name)
+
+	requestBody := bytes.NewBuffer(body)
+
+	endpoint, err := url.JoinPath("http://", endpoint, "update/")
+	if err != nil {
+		log.Printf("url joining failed, error: %s", err)
+	}
+
+	client := resty.New().SetBaseURL(endpoint)
+
+	req := client.R().
+		SetHeader("Accept-Encoding", "gzip").
+		SetHeader("Content-Type", "application/json")
+
+	resp, err := req.SetBody(requestBody).Post(endpoint)
+	if err != nil {
+		log.Printf("Server unreachible, error: %s", err)
+	} else {
+		defer resp.RawBody().Close()
+	}
+}
+
+func (s *Sender) bodyBuild(value any, name string) []byte {
+	var encoderJSON encoder.Encode
+
 	types := strings.ToLower(strings.TrimPrefix(fmt.Sprintf("%T", value), "storage."))
+
 	encoderJSON.ID = name
 	encoderJSON.MType = types
-	if encoderJSON.MType == "float64" {
+
+	switch encoderJSON.MType {
+	case "float64":
 		assertvalue, ok := value.(float64)
 		if !ok {
 			log.Printf("conversion failed")
 		}
-		floatvalue := float64(assertvalue)
-		encoderJSON.Value = &floatvalue
-		encoderJSON.Delta = nil
+
+		encoderJSON.Value = &assertvalue
 		encoderJSON.MType = "gauge"
-	}
-	if encoderJSON.MType == "counter" {
+	case "counter":
 		assertdelta, ok := value.(storage.Counter)
 		if !ok {
 			log.Printf("conversion failed")
 		}
+
 		intdelta := int64(assertdelta)
+
 		encoderJSON.Delta = &intdelta
-		encoderJSON.Value = nil
 	}
+
+	hash := s.hasher.Hasher(&encoderJSON)
+
+	err := s.hasher.HashChecker(hash, encoderJSON)
+	if err != nil {
+		log.Printf("error: %s", err)
+	}
+
+	encoderJSON.Hash = hash
+
 	body, err := encoderJSON.Marshall()
 	if err != nil {
 		log.Printf("error %s in agent", err)
 	}
-	endpoint, err = url.JoinPath("http://", endpoint, "update/")
-	if err != nil {
-		log.Printf("url joining failed, error: %s", err)
-	}
-	resp, err := http.Post(endpoint, "application/json", bytes.NewBuffer(body))
-	if err != nil {
-		log.Printf("Server unreachible, error: %s", err)
-	} else {
-		defer resp.Body.Close()
-	}
+
+	return body
 }

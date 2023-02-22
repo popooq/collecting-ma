@@ -1,37 +1,42 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/server/handlers"
-	"github.com/popooq/collectimg-ma/internal/server/router"
 	"github.com/popooq/collectimg-ma/internal/storage"
-	"github.com/popooq/collectimg-ma/internal/utils/backuper"
-	"github.com/popooq/collectimg-ma/internal/utils/encoder"
+	"github.com/popooq/collectimg-ma/internal/utils/dbsaver"
+	"github.com/popooq/collectimg-ma/internal/utils/filesaver"
+	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
 
 func main() {
-	storage := storage.NewMetricStorage()
-	encoder := encoder.NewEncoderMetricsStruct()
-	handler := handlers.NewMetricStorage(storage, encoder)
-	r := router.NewRouter(handler)
-	cfg := config.NewServerConfig()
-	safe, err := backuper.NewSaver(storage, cfg, encoder)
-	if err != nil {
-		log.Printf("error during create new saver %s", err)
-	}
-	if cfg.Restore {
-		loader, err := backuper.NewLoader(storage, cfg, encoder)
+	var Storage *storage.MetricsStorage
+	context := context.Background()
+	config := config.New()
+	hasher := hasher.Mew(config.Key)
+	if config.DBAddress != "" {
+		dbsaver, err := dbsaver.New(context, config.DBAddress)
 		if err != nil {
-			log.Printf("error during create new loader %s", err)
+			log.Println(err)
 		}
-		err = loader.LoadFromFile()
+		Storage = storage.New(dbsaver)
+		dbsaver.Migrate()
+	} else if config.StoreFile != "" {
+		saver, err := filesaver.New(config.StoreFile)
 		if err != nil {
-			log.Printf("error during load from file %s", err)
+			log.Println(err)
 		}
+		Storage = storage.New(saver)
 	}
-	go safe.Saver()
-	log.Fatal(http.ListenAndServe(cfg.Address, handlers.GzipHandler(r)))
+
+	handler := handlers.New(Storage, hasher, config.Restore)
+	router := chi.NewRouter()
+	router.Mount("/", handler.Route())
+
+	log.Fatal(http.ListenAndServe(config.Address, handlers.GzipHandler(router)))
 }

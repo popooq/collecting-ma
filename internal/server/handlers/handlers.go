@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -9,15 +10,22 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
+	"github.com/popooq/collectimg-ma/internal/utils/hasher"
+)
+
+const (
+	gauge   string = "gauge"
+	counter string = "counter"
 )
 
 type (
-	MetricStorage struct {
+	Handler struct {
 		storage *storage.MetricsStorage
-		encoder *encoder.Encode
+		hasher  *hasher.Hash
 	}
 	gzipWriter struct {
 		http.ResponseWriter
@@ -25,64 +33,101 @@ type (
 	}
 )
 
-func NewMetricStorage(stor *storage.MetricsStorage, encoder *encoder.Encode) MetricStorage {
-	return MetricStorage{
+func New(stor *storage.MetricsStorage, hasher *hasher.Hash, restore bool) Handler {
+	if restore {
+		err := stor.Load()
+		if err != nil {
+			log.Printf("error during load from file %s", err)
+		}
+	}
+	return Handler{
 		storage: stor,
-		encoder: encoder}
+		hasher:  hasher,
+	}
+
 }
 
-func (ms MetricStorage) CollectMetrics(w http.ResponseWriter, r *http.Request) {
+func (h Handler) Route() *chi.Mux {
+	r := chi.NewRouter()
 
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+
+	r.Post("/update/{mType}/{mName}/{mValue}", h.collectMetrics)
+	r.Get("/value/{mType}/{mName}", h.metricValue)
+	r.Post("/update/", h.collectJSONMetric)
+	r.Post("/value/", h.metricJSONValue)
+	r.Post("/updates/", h.collectDBMetrics)
+	r.Get("/", h.allMetrics)
+	r.Get("/ping", h.pingDB)
+
+	return r
+}
+
+func (h Handler) collectMetrics(w http.ResponseWriter, r *http.Request) {
 	metricTypeParam := chi.URLParam(r, "mType")
 	metricNameParam := chi.URLParam(r, "mName")
 	metricValueParam := chi.URLParam(r, "mValue")
+
 	switch {
-	case metricTypeParam == "gauge":
+	case metricTypeParam == gauge:
 		value, err := strconv.ParseFloat(metricValueParam, 64)
 		if err != nil {
 			http.Error(w, "There is no value", http.StatusBadRequest)
 			return
 		}
-		ms.storage.InsertMetric(metricNameParam, value)
-	case metricTypeParam == "counter":
+
+		h.storage.InsertMetric(metricNameParam, value)
+
+	case metricTypeParam == counter:
 		value, err := strconv.Atoi(metricValueParam)
 		if err != nil {
 			http.Error(w, "There is no value", http.StatusBadRequest)
 			return
 		}
-		ms.storage.CountCounterMetric(metricNameParam, int64(value))
+
+		h.storage.CountCounterMetric(metricNameParam, int64(value))
+
 	default:
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
 
 	w.Header().Set("Content-Type", "text/plain")
+
 	w.WriteHeader(http.StatusOK)
-	w.Write(nil)
+	if _, err := w.Write(nil); err != nil {
+		return
+	}
 }
 
-func (ms MetricStorage) MetricValue(w http.ResponseWriter, r *http.Request) {
-
+func (h Handler) metricValue(w http.ResponseWriter, r *http.Request) {
 	var metricValue string
 
 	metricTypeParam := chi.URLParam(r, "mType")
 	metricNameParam := chi.URLParam(r, "mName")
 
 	switch {
-	case metricTypeParam == "gauge":
-		value, err := ms.storage.GetMetricGauge(metricNameParam)
+	case metricTypeParam == gauge:
+		value, err := h.storage.GetMetricGauge(metricNameParam)
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
+
 		metricValue = fmt.Sprintf("%.3f", value)
-	case metricTypeParam == "counter":
-		value, err := ms.storage.GetMetricCounter(metricNameParam)
+
+	case metricTypeParam == counter:
+		value, err := h.storage.GetMetricCounter(metricNameParam)
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
+
 		metricValue = fmt.Sprintf("%d", value)
+
 	default:
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
@@ -90,39 +135,52 @@ func (ms MetricStorage) MetricValue(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(metricValue))
+
+	_, err := w.Write([]byte(metricValue))
+	if err != nil {
+		return
+	}
 }
 
-func (ms MetricStorage) AllMetrics(w http.ResponseWriter, r *http.Request) {
-
-	allMetrics := ms.storage.GetAllMetrics()
+func (h Handler) allMetrics(w http.ResponseWriter, r *http.Request) {
+	allMetrics := h.storage.GetAllMetrics()
 	listOfMetrics := fmt.Sprintf("%+v", allMetrics)
 
 	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(listOfMetrics))
+
+	_, err := w.Write([]byte(listOfMetrics))
+	if err != nil {
+		return
+	}
 }
 
-func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request) {
-
-	err := ms.encoder.Decode(r.Body)
+func (h Handler) collectJSONMetric(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		log.Println("something goes wrong")
+		log.Printf("error during ReadAll: %s", err)
 	}
-	log.Printf(ms.encoder.MType)
+
+	encoder := encoder.New()
+
+	err = encoder.Unmarshal(body)
+	if err != nil {
+		log.Printf("error during unmarshalling in handler: %s", err)
+	}
+
 	switch {
-	case ms.encoder.MType == "gauge":
-		ms.storage.InsertMetric(ms.encoder.ID, *ms.encoder.Value)
-		ms.encoder.Value, err = ms.storage.GetMetricJSONGauge(ms.encoder.ID)
-		ms.encoder.Delta = nil
+	case encoder.MType == gauge:
+		h.storage.InsertMetric(encoder.ID, *encoder.Value)
+		encoder.Value, err = h.storage.GetMetricJSONGauge(encoder.ID)
+		encoder.Delta = nil
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
 		}
-	case ms.encoder.MType == "counter":
-		ms.storage.CountCounterMetric(ms.encoder.ID, *ms.encoder.Delta)
-		ms.encoder.Delta, err = ms.storage.GetMetricJSONCounter(ms.encoder.ID)
-		ms.encoder.Value = nil
+	case encoder.MType == counter:
+		h.storage.CountCounterMetric(encoder.ID, *encoder.Delta)
+		encoder.Delta, err = h.storage.GetMetricJSONCounter(encoder.ID)
+		encoder.Value = nil
 		if err != nil {
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
 			return
@@ -132,53 +190,107 @@ func (ms MetricStorage) CollectJSONMetric(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	encoder.Hash = h.hasher.Hasher(encoder)
+
+	h.storage.Keeper.SaveMetric(encoder)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	err = ms.encoder.Encode(w)
+	err = encoder.Encode(w)
 	if err != nil {
 		log.Println("something goes wrong", err)
 	}
 }
 
-func (ms MetricStorage) MetricJSONValue(w http.ResponseWriter, r *http.Request) {
+func (h Handler) metricJSONValue(w http.ResponseWriter, r *http.Request) {
+	encoder := encoder.New()
 
-	err := ms.encoder.Decode(r.Body)
+	err := encoder.Decode(r.Body)
 	if err != nil {
-		log.Println("something goes wrong")
+		http.Error(w, fmt.Sprintln("something went wrong while decoding", err), http.StatusBadRequest)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 
 	switch {
-	case ms.encoder.MType == "gauge":
-		gaugeValue, err := ms.storage.GetMetricGauge(ms.encoder.ID)
+	case encoder.MType == gauge:
+		gaugeValue, err := h.storage.GetMetricGauge(encoder.ID)
 		if err != nil {
-			log.Printf("this metric doesn't exist %s", ms.encoder.ID)
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
+
 			return
 		}
-		ms.encoder.Value = &gaugeValue
-		ms.encoder.Delta = nil
-	case ms.encoder.MType == "counter":
-		value, err := ms.storage.GetMetricCounter(ms.encoder.ID)
+
+		encoder.Value = &gaugeValue
+		encoder.Delta = nil
+	case encoder.MType == counter:
+		value, err := h.storage.GetMetricCounter(encoder.ID)
 		if err != nil {
-			log.Printf("this metric doesn't exist %s", ms.encoder.ID)
 			http.Error(w, "This metric doesn't exist", http.StatusNotFound)
+
 			return
 		}
-		counterVal := int64(value)
-		ms.encoder.Delta = &counterVal
-		ms.encoder.Value = nil
+
+		counterVal := value
+
+		encoder.Delta = &counterVal
+		encoder.Value = nil
+
 	default:
 		http.Error(w, "this type of metric doesnt't exist", http.StatusNotImplemented)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	err = ms.encoder.Encode(w)
+	encoder.Hash = h.hasher.Hasher(encoder)
+
+	err = h.hasher.HashChecker(encoder.Hash, *encoder)
 	if err != nil {
-		log.Println("simething goes wrong", err)
+		http.Error(w, fmt.Sprintf("error : %s", err), http.StatusBadRequest)
+		return
 	}
+
+	w.WriteHeader(http.StatusOK)
+	err = encoder.Encode(w)
+	if err != nil {
+		log.Println("something went wrong while encode", err)
+	}
+}
+
+func (h Handler) pingDB(w http.ResponseWriter, r *http.Request) {
+	if err := h.storage.Keeper.KeeperCheck(); err != nil {
+		http.Error(w, "DataBase doesn't responce", http.StatusInternalServerError)
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(nil)
+}
+
+func (h Handler) collectDBMetrics(w http.ResponseWriter, r *http.Request) {
+	var Metrics []encoder.Encode
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("error during ReadAll: %s", err)
+	}
+
+	err = json.Unmarshal(body, &Metrics)
+	if err != nil {
+		log.Printf("error during unmarshalling in handler CollectDBMetrics: %s", err)
+	}
+
+	for _, metric := range Metrics {
+		err = h.storage.InsertMetrics(metric)
+		if err != nil {
+			http.Error(w, fmt.Sprint(err), http.StatusInternalServerError)
+		}
+
+		err = h.storage.Keeper.SaveAllMetrics(metric)
+		if err != nil {
+			log.Printf("error while adding metrics to buffer %s", err)
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write(nil)
 }
 
 func (w gzipWriter) Write(b []byte) (int, error) {
@@ -191,14 +303,14 @@ func GzipHandler(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
-		gz, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
+		gzip, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
 		if err != nil {
-			io.WriteString(w, err.Error())
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		defer gz.Close()
+		defer gzip.Close()
 
 		w.Header().Set("Content-Encoding", "gzip")
-		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gz}, r)
+		next.ServeHTTP(gzipWriter{ResponseWriter: w, Writer: gzip}, r)
 	})
 }
