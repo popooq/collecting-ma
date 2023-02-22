@@ -42,7 +42,7 @@ func (r *Reader) Run() {
 		case <-tickerpoll.C:
 			runtime.ReadMemStats(&memStat)
 			memoryStat, _ = mem.VirtualMemory()
-			*&cpuUsage, _ = cpu.Percent(0, false)
+			cpuUsage, _ = cpu.Percent(0, false)
 			r.pollCount++
 		case <-tickerreport.C:
 			mem := memStat
