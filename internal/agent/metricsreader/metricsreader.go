@@ -28,7 +28,35 @@ func New(sndr sender.Sender, tickerpoll time.Duration, tickerreport time.Duratio
 	}
 }
 
+func (r *Reader) worker(jobs <-chan int, result chan<- int) {
+	for j := range jobs {
+		r.send()
+		result <- j
+	}
+}
+
 func (r *Reader) Run() {
+	const numJobs = 5
+
+	jobs := make(chan int, numJobs)
+	results := make(chan int, numJobs)
+
+	for w := 1; w <= 5; w++ {
+		go r.worker(jobs, results)
+	}
+
+	for j := 1; j <= numJobs; j++ {
+		jobs <- j
+	}
+	close(jobs)
+
+	for a := 1; a <= numJobs; a++ {
+		<-results
+	}
+}
+
+func (r *Reader) send() {
+
 	var (
 		memStat      runtime.MemStats
 		memoryStat   *mem.VirtualMemoryStat
