@@ -27,7 +27,7 @@ func New() *Config {
 	flag.StringVar(&cfg.Key, "k", "", "hashing key")
 	flag.DurationVar(&cfg.PollInterval, "p", pollTime, "metric collection timer")
 	flag.DurationVar(&cfg.ReportInterval, "r", reportTime, "metric send timer")
-	flag.IntVar(&cfg.Rate, "l", 5, "worker rate")
+	flag.IntVar(&cfg.Rate, "l", 100, "worker rate")
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {

@@ -33,7 +33,7 @@ type (
 		buffer     int
 		wg         *sync.WaitGroup
 		cancelFunc context.CancelFunc
-		reader     Reader
+		sndr       sender.Sender
 	}
 	WorkerIface interface {
 		Start(pctx context.Context)
@@ -52,12 +52,12 @@ func New(sndr sender.Sender, tickerpoll time.Duration, tickerreport time.Duratio
 	}
 }
 
-func NewWorker(buffer int, reader *Reader) WorkerIface {
+func newWorker(buffer int, sndr sender.Sender) WorkerIface {
 	w := worker{
 		workchan: make(chan metrics, buffer),
 		buffer:   buffer,
 		wg:       new(sync.WaitGroup),
-		reader:   *reader,
+		sndr:     sndr,
 	}
 
 	return &w
@@ -69,43 +69,35 @@ func (w *worker) Start(pctx context.Context) {
 
 	for i := 0; i < w.buffer; i++ {
 		w.wg.Add(1)
-		log.Printf("cпавн вопркеров")
 		go w.spawnWorkers(ctx)
 	}
 }
 
 func (w *worker) Stop() {
-	log.Println("stop workers")
 	close(w.workchan)
 	w.cancelFunc()
 	w.wg.Wait()
-	log.Println("all workers exited!")
 }
 
 func (w *worker) spawnWorkers(ctx context.Context) {
 	defer w.wg.Done()
 
 	for work := range w.workchan {
-		log.Printf("work in w.workchan %v", work)
 		select {
 		case <-ctx.Done():
-			log.Printf("ctx done")
 			return
 		default:
-			log.Println("сендер начал работу")
-			w.reader.sndr.Go(work.value, work.name)
+			w.sndr.Go(work.value, work.name)
 		}
 	}
 }
 
 func (w *worker) queueTask(mem metrics) error {
 	if len(w.workchan) >= w.buffer {
-		log.Println("много воркеров")
 		err := errors.New("workers are busy, try again later")
 		return err
 	}
 
-	log.Printf("mem in qouquueeu %v", mem)
 	w.workchan <- mem
 	log.Println(w.workchan)
 	return nil
@@ -121,7 +113,7 @@ func (r Reader) Run() {
 	)
 
 	ctx := context.Background()
-	var w worker
+	w := newWorker(r.rate, r.sndr)
 
 	w.Start(ctx)
 	_, cancel := context.WithTimeout(ctx, graceperiod)
