@@ -104,7 +104,6 @@ func (w *worker) queueTask(mem metrics) error {
 }
 func (r Reader) Run() {
 	var (
-		graceperiod  time.Duration = 15 * time.Second
 		memStat      runtime.MemStats
 		memoryStat   *mem.VirtualMemoryStat
 		cpuUsage     []float64
@@ -112,6 +111,7 @@ func (r Reader) Run() {
 		tickerreport = time.NewTicker(r.tickerreport)
 	)
 
+	graceperiod := 15 * time.Second
 	ctx := context.Background()
 	w := newWorker(r.rate, r.sndr)
 
