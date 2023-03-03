@@ -11,13 +11,19 @@ import (
 	"github.com/shirou/gopsutil/v3/mem"
 )
 
-type Reader struct {
-	sndr         sender.Sender
-	tickerpoll   time.Duration
-	tickerreport time.Duration
-	address      string
-	pollCount    storage.Counter
-}
+type (
+	Reader struct {
+		sndr         sender.Sender
+		tickerpoll   time.Duration
+		tickerreport time.Duration
+		address      string
+		pollCount    storage.Counter
+	}
+	metrics struct {
+		value any
+		name  string
+	}
+)
 
 func New(sndr sender.Sender, tickerpoll time.Duration, tickerreport time.Duration, address string) *Reader {
 	return &Reader{
@@ -63,6 +69,7 @@ func (r *Reader) send() {
 		cpuUsage     []float64
 		tickerpoll   = time.NewTicker(r.tickerpoll)
 		tickerreport = time.NewTicker(r.tickerreport)
+		ch           chan sender.Metrics
 	)
 
 	for {
@@ -73,40 +80,48 @@ func (r *Reader) send() {
 			cpuUsage, _ = cpu.Percent(0, false)
 			r.pollCount++
 		case <-tickerreport.C:
-			mem := memStat
 			random := float64(rand.Uint32())
-			r.sndr.Go(random, "RandomValue", r.address)
-			r.sndr.Go(r.pollCount, "PollCount", r.address)
-			r.sndr.Go(float64(mem.Alloc), "Alloc", r.address)
-			r.sndr.Go(float64(mem.BuckHashSys), "BuckHashSys", r.address)
-			r.sndr.Go(float64(mem.Frees), "Frees", r.address)
-			r.sndr.Go(mem.GCCPUFraction, "GCCPUFraction", r.address)
-			r.sndr.Go(float64(mem.GCSys), "GCSys", r.address)
-			r.sndr.Go(float64(mem.HeapAlloc), "HeapAlloc", r.address)
-			r.sndr.Go(float64(mem.HeapIdle), "HeapIdle", r.address)
-			r.sndr.Go(float64(mem.HeapInuse), "HeapInuse", r.address)
-			r.sndr.Go(float64(mem.HeapObjects), "HeapObjects", r.address)
-			r.sndr.Go(float64(mem.HeapReleased), "HeapReleased", r.address)
-			r.sndr.Go(float64(mem.HeapSys), "HeapSys", r.address)
-			r.sndr.Go(float64(mem.LastGC), "LastGC", r.address)
-			r.sndr.Go(float64(mem.Lookups), "Lookups", r.address)
-			r.sndr.Go(float64(mem.MCacheInuse), "MCacheInuse", r.address)
-			r.sndr.Go(float64(mem.MCacheSys), "MCacheSys", r.address)
-			r.sndr.Go(float64(mem.MSpanInuse), "MSpanInuse", r.address)
-			r.sndr.Go(float64(mem.MSpanSys), "MSpanSys", r.address)
-			r.sndr.Go(float64(mem.Mallocs), "Mallocs", r.address)
-			r.sndr.Go(float64(mem.NextGC), "NextGC", r.address)
-			r.sndr.Go(float64(mem.NumForcedGC), "NumForcedGC", r.address)
-			r.sndr.Go(float64(mem.NumGC), "NumGC", r.address)
-			r.sndr.Go(float64(mem.OtherSys), "OtherSys", r.address)
-			r.sndr.Go(float64(mem.PauseTotalNs), "PauseTotalNs", r.address)
-			r.sndr.Go(float64(mem.StackInuse), "StackInuse", r.address)
-			r.sndr.Go(float64(mem.StackSys), "StackSys", r.address)
-			r.sndr.Go(float64(mem.Sys), "Sys", r.address)
-			r.sndr.Go(float64(mem.TotalAlloc), "TotalAlloc", r.address)
-			r.sndr.Go(float64(memoryStat.Total), "TotalMemory", r.address)
-			r.sndr.Go(float64(memoryStat.Free), "FreeMemory", r.address)
-			r.sndr.Go(float64(cpuUsage[0]), "CPUutilization1", r.address)
+			mem := memStat
+			memslice := []sender.Metrics{
+				{Value: random, Name: "RandomValue"},
+				{Value: r.pollCount, Name: "PollCount"},
+				{Value: random, Name: "RandomValue"},
+				{Value: r.pollCount, Name: "PollCount"},
+				{Value: float64(mem.Alloc), Name: "Alloc"},
+				{Value: float64(mem.BuckHashSys), Name: "BuckHashSys"},
+				{Value: float64(mem.Frees), Name: "Frees"},
+				{Value: mem.GCCPUFraction, Name: "GCCPUFraction"},
+				{Value: float64(mem.GCSys), Name: "GCSys"},
+				{Value: float64(mem.HeapAlloc), Name: "HeapAlloc"},
+				{Value: float64(mem.HeapIdle), Name: "HeapIdle"},
+				{Value: float64(mem.HeapInuse), Name: "HeapInuse"},
+				{Value: float64(mem.HeapObjects), Name: "HeapObjects"},
+				{Value: float64(mem.HeapReleased), Name: "HeapReleased"},
+				{Value: float64(mem.HeapSys), Name: "HeapSys"},
+				{Value: float64(mem.LastGC), Name: "LastGC"},
+				{Value: float64(mem.Lookups), Name: "Lookups"},
+				{Value: float64(mem.MCacheInuse), Name: "MCacheInuse"},
+				{Value: float64(mem.MCacheSys), Name: "MCacheSys"},
+				{Value: float64(mem.MSpanInuse), Name: "MSpanInuse"},
+				{Value: float64(mem.MSpanSys), Name: "MSpanSys"},
+				{Value: float64(mem.Mallocs), Name: "Mallocs"},
+				{Value: float64(mem.NextGC), Name: "NextGC"},
+				{Value: float64(mem.NumForcedGC), Name: "NumForcedGC"},
+				{Value: float64(mem.NumGC), Name: "NumGC"},
+				{Value: float64(mem.OtherSys), Name: "OtherSys"},
+				{Value: float64(mem.PauseTotalNs), Name: "PauseTotalNs"},
+				{Value: float64(mem.StackInuse), Name: "StackInuse"},
+				{Value: float64(mem.StackSys), Name: "StackSys"},
+				{Value: float64(mem.Sys), Name: "Sys"},
+				{Value: float64(mem.TotalAlloc), Name: "TotalAlloc"},
+				{Value: float64(memoryStat.Total), Name: "TotalMemory"},
+				{Value: float64(memoryStat.Free), Name: "FreeMemory"},
+				{Value: float64(cpuUsage[0]), Name: "CPUutilization1"},
+			}
+			for _, mem := range memslice {
+				ch <- mem
+			}
+			go r.sndr.Go(ch)
 		}
 	}
 }
