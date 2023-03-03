@@ -11,6 +11,6 @@ func main() {
 	cfg := config.New()
 	hshr := hasher.Mew(cfg.Key)
 	sndr := sender.New(hshr, cfg.Address)
-	reader := metricsreader.New(sndr, cfg.PollInterval, cfg.ReportInterval, cfg.Address)
+	reader := metricsreader.New(sndr, cfg.PollInterval, cfg.ReportInterval, cfg.Address, cfg.Rate)
 	reader.Run()
 }

@@ -18,11 +18,6 @@ type Sender struct {
 	endpoint string
 }
 
-type Metrics struct {
-	Value any
-	Name  string
-}
-
 func New(hasher *hasher.Hash, endpoint string) Sender {
 	return Sender{
 		hasher:   hasher,
@@ -30,29 +25,27 @@ func New(hasher *hasher.Hash, endpoint string) Sender {
 	}
 }
 
-func (s *Sender) Go(ch chan Metrics) {
-	for metric := range ch {
-		body := s.bodyBuild(metric.Value, metric.Name)
+func (s *Sender) Go(value any, name string) {
+	body := s.bodyBuild(value, name)
 
-		requestBody := bytes.NewBuffer(body)
+	requestBody := bytes.NewBuffer(body)
 
-		endpoint, err := url.JoinPath("http://", s.endpoint, "update/")
-		if err != nil {
-			log.Printf("url joining failed, error: %s", err)
-		}
+	endpoint, err := url.JoinPath("http://", s.endpoint, "update/")
+	if err != nil {
+		log.Printf("url joining failed, error: %s", err)
+	}
 
-		client := resty.New().SetBaseURL(endpoint)
+	client := resty.New().SetBaseURL(endpoint)
 
-		req := client.R().
-			SetHeader("Accept-Encoding", "gzip").
-			SetHeader("Content-Type", "application/json")
+	req := client.R().
+		SetHeader("Accept-Encoding", "gzip").
+		SetHeader("Content-Type", "application/json")
 
-		resp, err := req.SetBody(requestBody).Post(endpoint)
-		if err != nil {
-			log.Printf("Server unreachible, error: %s", err)
-		} else {
-			resp.RawBody().Close()
-		}
+	resp, err := req.SetBody(requestBody).Post(endpoint)
+	if err != nil {
+		log.Printf("Server unreachible, error: %s", err)
+	} else {
+		defer resp.RawBody().Close()
 	}
 }
 
