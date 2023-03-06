@@ -14,21 +14,23 @@ import (
 )
 
 type Sender struct {
-	hasher *hasher.Hash
+	hasher   *hasher.Hash
+	endpoint string
 }
 
-func New(hasher *hasher.Hash) Sender {
+func New(hasher *hasher.Hash, endpoint string) Sender {
 	return Sender{
-		hasher: hasher,
+		hasher:   hasher,
+		endpoint: endpoint,
 	}
 }
 
-func (s *Sender) Go(value any, name, endpoint string) {
+func (s *Sender) Go(value any, name string) {
 	body := s.bodyBuild(value, name)
 
 	requestBody := bytes.NewBuffer(body)
 
-	endpoint, err := url.JoinPath("http://", endpoint, "update/")
+	endpoint, err := url.JoinPath("http://", s.endpoint, "update/")
 	if err != nil {
 		log.Printf("url joining failed, error: %s", err)
 	}

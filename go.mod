@@ -12,11 +12,23 @@ require (
 )
 
 require (
+	github.com/go-ole/go-ole v1.2.6 // indirect
+	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
+	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
+	github.com/tklauser/go-sysconf v0.3.11 // indirect
+	github.com/tklauser/numcpus v0.6.0 // indirect
+	github.com/yusufpapurcu/wmi v1.2.2 // indirect
+	golang.org/x/sys v0.4.0 // indirect
+)
+
+require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/lib/pq v1.10.0 // indirect
+	github.com/shirou/gopsutil v3.21.11+incompatible
+	github.com/shirou/gopsutil/v3 v3.23.1
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.5.0 // indirect
 	golang.org/x/net v0.5.0 // indirect
