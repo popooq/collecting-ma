@@ -36,9 +36,9 @@ func TestMew(t *testing.T) {
 
 func TestHash_Hasher(t *testing.T) {
 	var (
-		gauge   float64 = 3.16
-		counter int64   = 3
+		counter int64 = 3
 	)
+	gauge := 3.16
 	type fields struct {
 		Key []byte
 	}

@@ -174,8 +174,8 @@ func TestMetricsStorage_GetMetricGauge(t *testing.T) {
 func TestMetricsStorage_GetMetricJSONGauge(t *testing.T) {
 	var (
 		keeper keeper
-		b      float64 = 3.16
 	)
+	gauge := 3.16
 	type fields struct {
 		Keeper         Keeper
 		MetricsGauge   map[string]float64
@@ -202,7 +202,7 @@ func TestMetricsStorage_GetMetricJSONGauge(t *testing.T) {
 			args: args{
 				name: "alloc",
 			},
-			want:    &b,
+			want:    &gauge,
 			wantErr: false,
 		},
 		{
@@ -389,9 +389,9 @@ func TestMetricsStorage_GetMetricJSONCounter(t *testing.T) {
 func TestMetricsStorage_InsertMetrics(t *testing.T) {
 	var (
 		keeper  keeper
-		gauge   float64 = 3.16
-		counter int64   = 3
+		counter int64 = 3
 	)
+	gauge := 3.16
 	type fields struct {
 		Keeper         Keeper
 		MetricsGauge   map[string]float64
@@ -473,9 +473,9 @@ func TestMetricsStorage_InsertMetrics(t *testing.T) {
 func TestMetricsStorage_GetAllMetrics(t *testing.T) {
 	var (
 		keeper  keeper
-		gauge   float64 = 3.16
-		counter int64   = 3
+		counter int64 = 3
 	)
+	gauge := 3.16
 	type fields struct {
 		Keeper         Keeper
 		MetricsGauge   map[string]float64

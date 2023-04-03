@@ -25,7 +25,6 @@ func TestNew(t *testing.T) {
 		Address:        "127.0.0.1:8080",
 		ReportInterval: 10 * time.Second,
 		PollInterval:   2 * time.Second,
-		Key:            "",
 		Rate:           100,
 	}
 
