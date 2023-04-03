@@ -152,7 +152,7 @@ func (ms *MetricsStorage) GetAllMetrics() []encoder.Encode {
 	for k, d := range ms.MetricsCounter {
 		var metric encoder.Encode
 		d = ms.MetricsCounter[k]
-		metric.MType = "gauge"
+		metric.MType = "counter"
 		metric.ID = k
 		metric.Delta = &d
 		allMetrics = append(allMetrics, metric)

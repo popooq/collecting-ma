@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -8,11 +9,29 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/storage"
+	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
 
+type keeperMock struct {
+}
+
+func (k keeperMock) SaveMetric(metric *encoder.Encode) error {
+	return nil
+}
+func (k keeperMock) SaveAllMetrics(metric encoder.Encode) error {
+	return nil
+}
+func (k keeperMock) LoadMetrics() ([]encoder.Encode, error) {
+	return nil, nil
+}
+
+func (k keeperMock) KeeperCheck() error {
+	return nil
+}
+
 func NewRouter() *chi.Mux {
-	var keeper storage.Keeper
+	var keeper keeperMock
 	var cfg config.Config
 	MemS := storage.New(keeper)
 	hasher := hasher.Mew("")
@@ -144,6 +163,41 @@ func TestMetricStorageMetricValue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, tt.url, nil)
+			w := httptest.NewRecorder()
+
+			h := NewRouter()
+			h.ServeHTTP(w, r)
+			result := w.Result()
+			if result.StatusCode != tt.code {
+				t.Errorf("Expected code %d, got %d", tt.code, result.StatusCode)
+			}
+			defer result.Body.Close()
+		})
+	}
+}
+
+func TestHandler_collectJSONMetric(t *testing.T) {
+	url := "/update/"
+	tests := []struct {
+		name string
+		body string
+		code int
+	}{
+		// TODO: Add test cases.
+		{name: "Positive JSON Counter test",
+			body: `{"id": "PollCount", "delta": 2345234211616163, "type": "counter"}`,
+			code: 200,
+		},
+		// {
+		// 	name: "",
+		// 	body: "",
+		// 	code: 200,
+		// },
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requestBody := bytes.NewBuffer([]byte(tt.body))
+			r := httptest.NewRequest(http.MethodPost, url, requestBody)
 			w := httptest.NewRecorder()
 
 			h := NewRouter()

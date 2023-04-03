@@ -102,6 +102,7 @@ func (w *worker) queueTask(mem metrics) error {
 	log.Println(w.workchan)
 	return nil
 }
+
 func (r Reader) Run() {
 	var (
 		memStat      runtime.MemStats
