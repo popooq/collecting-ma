@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+
 	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"

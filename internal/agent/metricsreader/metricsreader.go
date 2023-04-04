@@ -1,3 +1,4 @@
+// пакет metricsreader нужен для сбора и отправки метрик из рантайма
 package metricsreader
 
 import (
@@ -9,20 +10,22 @@ import (
 	"sync"
 	"time"
 
-	"github.com/popooq/collectimg-ma/internal/agent/sender"
-	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
+
+	"github.com/popooq/collectimg-ma/internal/agent/sender"
+	"github.com/popooq/collectimg-ma/internal/storage"
 )
 
 type (
+	// Reader структура хранит информацию о конфигурации и sender
 	Reader struct {
-		sndr         sender.Sender
-		tickerpoll   time.Duration
-		tickerreport time.Duration
-		address      string
-		rate         int
-		pollCount    storage.Counter
+		sndr         sender.Sender   // sdnr - отправляет метрики на поле
+		tickerpoll   time.Duration   // tickerpoll - частота обновления метрик
+		tickerreport time.Duration   // tickerreport - частота отправления метрик
+		address      string          // address - адресс сервера куда отправляются метрики
+		rate         int             // rate - количество горутин
+		pollCount    storage.Counter // pollCount - счетчик отпрпвалений
 	}
 	metrics struct {
 		value any
@@ -35,9 +38,10 @@ type (
 		cancelFunc context.CancelFunc
 		sndr       sender.Sender
 	}
-	WorkerIface interface {
-		Start(pctx context.Context)
-		Stop()
+	//WorkerIface
+	workerIface interface {
+		start(pctx context.Context)
+		stop()
 		queueTask(mem metrics) error
 	}
 )
@@ -52,7 +56,7 @@ func New(sndr sender.Sender, tickerpoll time.Duration, tickerreport time.Duratio
 	}
 }
 
-func newWorker(buffer int, sndr sender.Sender) WorkerIface {
+func newWorker(buffer int, sndr sender.Sender) workerIface {
 	w := worker{
 		workchan: make(chan metrics, buffer),
 		buffer:   buffer,
@@ -63,7 +67,7 @@ func newWorker(buffer int, sndr sender.Sender) WorkerIface {
 	return &w
 }
 
-func (w *worker) Start(pctx context.Context) {
+func (w *worker) start(pctx context.Context) {
 	ctx, cancelFunc := context.WithCancel(pctx)
 	w.cancelFunc = cancelFunc
 
@@ -73,7 +77,7 @@ func (w *worker) Start(pctx context.Context) {
 	}
 }
 
-func (w *worker) Stop() {
+func (w *worker) stop() {
 	close(w.workchan)
 	w.cancelFunc()
 	w.wg.Wait()
@@ -116,10 +120,10 @@ func (r Reader) Run() {
 	ctx := context.Background()
 	w := newWorker(r.rate, r.sndr)
 
-	w.Start(ctx)
+	w.start(ctx)
 	_, cancel := context.WithTimeout(ctx, graceperiod)
 	defer func() {
-		w.Stop()
+		w.stop()
 		cancel()
 	}()
 

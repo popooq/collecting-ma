@@ -10,11 +10,13 @@ import (
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 )
 
+// Saver структура хранит иенформацию о сейвере
 type Saver struct {
 	file       *os.File
 	readwriter *bufio.ReadWriter
 }
 
+// New функция создает новый Saver
 func New(storefile string) (*Saver, error) {
 	file, err := os.OpenFile(storefile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o777)
 	if err != nil {
@@ -30,6 +32,7 @@ func New(storefile string) (*Saver, error) {
 	}, nil
 }
 
+// SaveMetric метод сохраняет метрики в файл
 func (s *Saver) SaveMetric(metric *encoder.Encode) error {
 	s.file.Truncate(0)
 	_ = s.readwriter.WriteByte('[')
@@ -80,6 +83,7 @@ func (s *Saver) SaveAllMetrics(metric encoder.Encode) error {
 	return s.readwriter.Flush()
 }
 
+// LoadMetric метод загружает метрики
 func (s *Saver) LoadMetrics() (metrics []encoder.Encode, err error) {
 	var data []byte
 
@@ -98,6 +102,7 @@ func (s *Saver) LoadMetrics() (metrics []encoder.Encode, err error) {
 	return metrics, nil
 }
 
+// KeeperCheck метод-заглушка для реализации интерфейса Keeper
 func (s *Saver) KeeperCheck() error {
 	return nil
 }
