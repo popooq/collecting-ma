@@ -211,3 +211,10 @@ func TestHandler_collectJSONMetric(t *testing.T) {
 		})
 	}
 }
+
+func Example() {
+	var keeper keeperMock
+	stormock := storage.New(keeper)
+	handler := New(stormock, hasher.Mew(""), false)
+	handler.Route()
+}
