@@ -1,8 +1,10 @@
 package config
 
 import (
+	"encoding/json"
 	"flag"
 	"log"
+	"os"
 	"time"
 
 	"github.com/caarlos0/env/v6"
@@ -17,6 +19,7 @@ type Config struct {
 	Key           string        `env:"KEY"`            //Key - ключ шифрования
 	DBAddress     string        `env:"DATABASE_DSN"`   // DBAddress - адрес базы данных
 	CryptoKey     string        `env:"CRYPTO_KEY"`     // CryptoKey - путь до файла с приватным ключом
+	ConfigFile    string        `env:"CONFIG"`         // Config - путь до файла с конфигом сервера
 }
 
 // New создает новый конфиг
@@ -33,11 +36,17 @@ func New() *Config {
 	flag.BoolVar(&cfg.Restore, "r", true, "recovering from backup before start")
 	flag.StringVar(&cfg.DBAddress, "d", "", "set the DB address")
 	flag.StringVar(&cfg.CryptoKey, "crypto-key", "", "private key file")
+	flag.StringVar(&cfg.ConfigFile, "c", "", "file of configuration")
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {
 		log.Printf("env parse failed :%s", err)
 	}
 
+	if cfg.ConfigFile != "" {
+		file, _ := os.ReadFile(cfg.ConfigFile)
+
+		_ = json.Unmarshal(file, &cfg)
+	}
 	return &cfg
 }

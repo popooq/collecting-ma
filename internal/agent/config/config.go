@@ -2,8 +2,10 @@
 package config
 
 import (
+	"encoding/json"
 	"flag"
 	"log"
+	"os"
 	"time"
 
 	"github.com/caarlos0/env/v6"
@@ -17,6 +19,7 @@ type Config struct {
 	Key            string        `env:"KEY"`             // Key - ключ шщифрования
 	Rate           int           `env:"RATE_LIMIT"`      // Rate - количество единовременных потоков
 	CryptoKey      string        `env:"CRYPTO_KEY"`      // CryptoKey - путь до файла с публичным ключом
+	ConfigFile     string        `env:"CONFIG"`          // Config - путь до файла с конфигом агента
 }
 
 // New создает новый конфиг
@@ -33,10 +36,17 @@ func New() *Config {
 	flag.DurationVar(&cfg.PollInterval, "p", pollTime, "metric collection timer")
 	flag.DurationVar(&cfg.ReportInterval, "r", reportTime, "metric send timer")
 	flag.IntVar(&cfg.Rate, "l", 100, "worker rate")
+	flag.StringVar(&cfg.ConfigFile, "c", "", "file of configuration")
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {
 		log.Printf("env parse failed :%s", err)
+	}
+
+	if cfg.ConfigFile != "" {
+		file, _ := os.ReadFile(cfg.ConfigFile)
+
+		_ = json.Unmarshal(file, &cfg)
 	}
 
 	return &cfg
