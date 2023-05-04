@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"math/rand"
+	"os"
 	"runtime"
 	"sync"
 	"time"
@@ -26,6 +27,7 @@ type (
 		address      string          // address - адресс сервера куда отправляются метрики
 		rate         int             // rate - количество горутин
 		pollCount    storage.Counter // pollCount - счетчик отпрпвалений
+		shutdown     bool            // shutdown - проверка сисколов
 	}
 	metrics struct {
 		value any
@@ -107,7 +109,7 @@ func (w *worker) queueTask(mem metrics) error {
 	return nil
 }
 
-func (r Reader) Run() {
+func (r Reader) Run(sigs chan os.Signal) {
 	var (
 		memStat      runtime.MemStats
 		memoryStat   *mem.VirtualMemoryStat
@@ -115,6 +117,8 @@ func (r Reader) Run() {
 		tickerpoll   = time.NewTicker(r.tickerpoll)
 		tickerreport = time.NewTicker(r.tickerreport)
 	)
+
+	r.shutdown = false
 
 	graceperiod := 15 * time.Second
 	ctx := context.Background()
@@ -127,13 +131,18 @@ func (r Reader) Run() {
 		cancel()
 	}()
 
-	for {
+	for !r.shutdown {
 		select {
+
+		case <-sigs:
+			r.shutdown = true
+
 		case <-tickerpoll.C:
 			runtime.ReadMemStats(&memStat)
 			memoryStat, _ = mem.VirtualMemory()
 			cpuUsage, _ = cpu.Percent(0, false)
 			r.pollCount++
+
 		case <-tickerreport.C:
 			random := float64(rand.Uint32())
 			mem := memStat

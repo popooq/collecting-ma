@@ -13,11 +13,11 @@ import (
 // Config определяет конфигурацию агента
 type Config struct {
 	Address       string        `env:"ADDRESS"`        // Address - адрес сервера
+	Restore       bool          `env:"RESTORE"`        // Restore - восстановление из бекапа bool
 	StoreInterval time.Duration `env:"STORE_INTERVAL"` // StoreInterval - период сохранения метрик
 	StoreFile     string        `env:"STORE_FILE"`     // Storefile - адрес файла для хранения метрик
-	Restore       bool          `env:"RESTORE"`        // Restore - восстановление из бекапа bool
-	Key           string        `env:"KEY"`            //Key - ключ шифрования
 	DBAddress     string        `env:"DATABASE_DSN"`   // DBAddress - адрес базы данных
+	Key           string        `env:"KEY"`            //Key - ключ шифрования
 	CryptoKey     string        `env:"CRYPTO_KEY"`     // CryptoKey - путь до файла с приватным ключом
 	ConfigFile    string        `env:"CONFIG"`         // Config - путь до файла с конфигом сервера
 }

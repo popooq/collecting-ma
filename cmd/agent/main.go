@@ -2,6 +2,9 @@ package main
 
 import (
 	"log"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/popooq/collectimg-ma/internal/agent/config"
 	"github.com/popooq/collectimg-ma/internal/agent/metricsreader"
@@ -19,5 +22,9 @@ func main() {
 	}
 	sndr := sender.New(hshr, cfg.Address, enc)
 	reader := metricsreader.New(sndr, cfg.PollInterval, cfg.ReportInterval, cfg.Address, cfg.Rate)
-	reader.Run()
+
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	reader.Run(sigs)
 }
