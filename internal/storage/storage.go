@@ -8,6 +8,7 @@ import (
 )
 
 type (
+	// Storage интерфейс обработки метрик
 	Storage interface {
 		InsertMetric(name string, value float64)
 		CountCounterMetric(name string, value int64)
@@ -19,6 +20,7 @@ type (
 		InsertMetrics(metric encoder.Encode) error
 	}
 
+	// Keeper интерфейс сохранения метрик
 	Keeper interface {
 		SaveMetric(metric *encoder.Encode) error
 		SaveAllMetrics(metric encoder.Encode) error
@@ -26,13 +28,14 @@ type (
 		KeeperCheck() error
 	}
 
+	//MetricsStorage
 	MetricsStorage struct {
-		Keeper Keeper
-		//Cfg            config.Config
-		MetricsGauge   map[string]float64
-		MetricsCounter map[string]int64
+		Keeper         Keeper             // Keeper реализация интерфейса
+		MetricsGauge   map[string]float64 // MetricsGauge мапа хранящяя метрики типа gauge
+		MetricsCounter map[string]int64   // MetricsCounter мапа хранящяя метрики типа counter
 		mu             sync.Mutex
 	}
+	// Counter счетчик
 	Counter int64
 )
 
@@ -41,6 +44,7 @@ const (
 	counter string = "counter"
 )
 
+// New возвращает новый MetricsStorage
 func New(Keeper Keeper) *MetricsStorage {
 	return &MetricsStorage{
 		mu:             sync.Mutex{},
@@ -51,18 +55,21 @@ func New(Keeper Keeper) *MetricsStorage {
 
 }
 
+// InsertMetric добавляет новую метрику типа gauge
 func (ms *MetricsStorage) InsertMetric(name string, value float64) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 	ms.MetricsGauge[name] = value
 }
 
+// CountCounterMetric добавляет новую метрику типа counter
 func (ms *MetricsStorage) CountCounterMetric(name string, value int64) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 	ms.MetricsCounter[name] += value
 }
 
+// GetMetricGauge возвращает метрику типа gauge
 func (ms *MetricsStorage) GetMetricGauge(name string) (float64, error) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
@@ -77,6 +84,7 @@ func (ms *MetricsStorage) GetMetricGauge(name string) (float64, error) {
 	return value, nil
 }
 
+// GetMetricJSONGauge возвращает ссылку на метрику типа gauge
 func (ms *MetricsStorage) GetMetricJSONGauge(name string) (*float64, error) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
@@ -91,6 +99,7 @@ func (ms *MetricsStorage) GetMetricJSONGauge(name string) (*float64, error) {
 	return &value, nil
 }
 
+// GetMetricCounter возвращает метрику типа counter
 func (ms *MetricsStorage) GetMetricCounter(name string) (int64, error) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
@@ -105,6 +114,7 @@ func (ms *MetricsStorage) GetMetricCounter(name string) (int64, error) {
 	return value, nil
 }
 
+// GetMetricJSONCounter возвращает ссылку на метрику типа counter
 func (ms *MetricsStorage) GetMetricJSONCounter(name string) (*int64, error) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
@@ -121,6 +131,7 @@ func (ms *MetricsStorage) GetMetricJSONCounter(name string) (*int64, error) {
 	return &value, nil
 }
 
+// InsertMetrics добавляет метрику в хранилище
 func (ms *MetricsStorage) InsertMetrics(metric encoder.Encode) error {
 	switch {
 	case metric.MType == gauge:
@@ -134,6 +145,7 @@ func (ms *MetricsStorage) InsertMetrics(metric encoder.Encode) error {
 	return nil
 }
 
+// GetAllMetrics возвращает все метрики из хранилища
 func (ms *MetricsStorage) GetAllMetrics() []encoder.Encode {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
@@ -152,7 +164,7 @@ func (ms *MetricsStorage) GetAllMetrics() []encoder.Encode {
 	for k, d := range ms.MetricsCounter {
 		var metric encoder.Encode
 		d = ms.MetricsCounter[k]
-		metric.MType = "gauge"
+		metric.MType = "counter"
 		metric.ID = k
 		metric.Delta = &d
 		allMetrics = append(allMetrics, metric)
@@ -161,18 +173,21 @@ func (ms *MetricsStorage) GetAllMetrics() []encoder.Encode {
 	return allMetrics
 }
 
+// GetBackupCounter добавляет counter из бекапа
 func (ms *MetricsStorage) GetBackupCounter(id string, delta int64) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 	ms.MetricsCounter[id] = delta
 }
 
+// GetBackupGauge добавляет gauge из бекапа
 func (ms *MetricsStorage) GetBackupGauge(id string, value float64) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 	ms.MetricsGauge[id] = value
 }
 
+// Load загружает метрики из бекапа
 func (ms *MetricsStorage) Load() error {
 	metrics, err := ms.Keeper.LoadMetrics()
 	if err != nil {

@@ -1,3 +1,10 @@
+// пакет handlers содержит обработчики сервера
+//
+// хочу тут еще пару строк
+//
+// типа важный пакет
+//
+// типа много инфы
 package handlers
 
 import (
@@ -12,6 +19,7 @@ import (
 
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
+
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 	"github.com/popooq/collectimg-ma/internal/utils/hasher"
@@ -23,6 +31,7 @@ const (
 )
 
 type (
+	// Handler содержит информацию о хендлере
 	Handler struct {
 		storage *storage.MetricsStorage
 		hasher  *hasher.Hash
@@ -33,6 +42,7 @@ type (
 	}
 )
 
+// New создает новый хендлер
 func New(stor *storage.MetricsStorage, hasher *hasher.Hash, restore bool) Handler {
 	if restore {
 		err := stor.Load()
@@ -47,6 +57,7 @@ func New(stor *storage.MetricsStorage, hasher *hasher.Hash, restore bool) Handle
 
 }
 
+// Route создает новый роутер
 func (h Handler) Route() *chi.Mux {
 	r := chi.NewRouter()
 

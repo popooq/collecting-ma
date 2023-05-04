@@ -4,8 +4,11 @@ import (
 	"context"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+
 	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/server/handlers"
 	"github.com/popooq/collectimg-ma/internal/storage"
@@ -37,6 +40,7 @@ func main() {
 	handler := handlers.New(Storage, hasher, config.Restore)
 	router := chi.NewRouter()
 	router.Mount("/", handler.Route())
+	router.Mount("/debug", middleware.Profiler())
 
 	log.Fatal(http.ListenAndServe(config.Address, handlers.GzipHandler(router)))
 }

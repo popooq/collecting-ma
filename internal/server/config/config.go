@@ -8,15 +8,17 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
+// Config определяет конфигурацию агента
 type Config struct {
-	Address       string        `env:"ADDRESS"`
-	StoreInterval time.Duration `env:"STORE_INTERVAL"`
-	StoreFile     string        `env:"STORE_FILE"`
-	Restore       bool          `env:"RESTORE"`
-	Key           string        `env:"KEY"`
-	DBAddress     string        `env:"DATABASE_DSN"`
+	Address       string        `env:"ADDRESS"`        // Address - адрес сервера
+	StoreInterval time.Duration `env:"STORE_INTERVAL"` // StoreInterval - период сохранения метрик
+	StoreFile     string        `env:"STORE_FILE"`     // Storefile - адрес файла для хранения метрик
+	Restore       bool          `env:"RESTORE"`        // Restore - восстановление из бекапа bool
+	Key           string        `env:"KEY"`            //Key - ключ шифрования
+	DBAddress     string        `env:"DATABASE_DSN"`   // DBAddress - адрес базы данных
 }
 
+// New создает новый конфиг
 func New() *Config {
 	var (
 		cfg       Config

@@ -8,16 +8,19 @@ import (
 	"strings"
 
 	"github.com/go-resty/resty/v2"
+
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
 	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
 
+// Sender описывает sender
 type Sender struct {
 	hasher   *hasher.Hash
 	endpoint string
 }
 
+// New создает новый Sender
 func New(hasher *hasher.Hash, endpoint string) Sender {
 	return Sender{
 		hasher:   hasher,
@@ -25,6 +28,7 @@ func New(hasher *hasher.Hash, endpoint string) Sender {
 	}
 }
 
+// Go отправляет метрику на сервер
 func (s *Sender) Go(value any, name string) {
 	body := s.bodyBuild(value, name)
 

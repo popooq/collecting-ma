@@ -1,3 +1,4 @@
+// Пакет config нужен для инициализации конфига сервиса
 package config
 
 import (
@@ -8,14 +9,16 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
+// Config определяет конфигурацию агента
 type Config struct {
-	Address        string        `env:"ADDRESS"`
-	ReportInterval time.Duration `env:"REPORT_INTERVAL"`
-	PollInterval   time.Duration `env:"POLL_INTERVAL"`
-	Key            string        `env:"KEY"`
-	Rate           int           `env:"RATE_LIMIT"`
+	Address        string        `env:"ADDRESS"`         // Address - адрес сервера
+	ReportInterval time.Duration `env:"REPORT_INTERVAL"` // ReportInterval - интервал отправки метрик на сервер
+	PollInterval   time.Duration `env:"POLL_INTERVAL"`   // PollInterval - интервал сбора метрик из рантайма
+	Key            string        `env:"KEY"`             // Key - ключ шщифрования
+	Rate           int           `env:"RATE_LIMIT"`      // Rate - количество единовременных потоков
 }
 
+// New создает новый конфиг
 func New() *Config {
 	var (
 		cfg        Config
