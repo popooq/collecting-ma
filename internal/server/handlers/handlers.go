@@ -22,6 +22,7 @@ import (
 
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
+	"github.com/popooq/collectimg-ma/internal/utils/encryptor"
 	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
 
@@ -33,8 +34,9 @@ const (
 type (
 	// Handler содержит информацию о хендлере
 	Handler struct {
-		storage *storage.MetricsStorage
-		hasher  *hasher.Hash
+		storage   *storage.MetricsStorage
+		hasher    *hasher.Hash
+		encryptor *encryptor.Encryptor
 	}
 	gzipWriter struct {
 		http.ResponseWriter
@@ -43,7 +45,7 @@ type (
 )
 
 // New создает новый хендлер
-func New(stor *storage.MetricsStorage, hasher *hasher.Hash, restore bool) Handler {
+func New(stor *storage.MetricsStorage, hasher *hasher.Hash, restore bool, enc *encryptor.Encryptor) Handler {
 	if restore {
 		err := stor.Load()
 		if err != nil {
@@ -51,8 +53,9 @@ func New(stor *storage.MetricsStorage, hasher *hasher.Hash, restore bool) Handle
 		}
 	}
 	return Handler{
-		storage: stor,
-		hasher:  hasher,
+		storage:   stor,
+		hasher:    hasher,
+		encryptor: enc,
 	}
 
 }
@@ -172,6 +175,10 @@ func (h Handler) collectJSONMetric(w http.ResponseWriter, r *http.Request) {
 		log.Printf("error during ReadAll: %s", err)
 	}
 
+	body, err = h.encryptor.Decrypt(body)
+	if err != nil {
+		log.Panicln(err)
+	}
 	encoder := encoder.New()
 
 	err = encoder.Unmarshal(body)
@@ -216,7 +223,18 @@ func (h Handler) collectJSONMetric(w http.ResponseWriter, r *http.Request) {
 func (h Handler) metricJSONValue(w http.ResponseWriter, r *http.Request) {
 	encoder := encoder.New()
 
-	err := encoder.Decode(r.Body)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+
+		log.Println("read request body error!")
+	}
+
+	body, err = h.encryptor.Decrypt(body)
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = encoder.Unmarshal(body)
 	if err != nil {
 		http.Error(w, fmt.Sprintln("something went wrong while decoding", err), http.StatusBadRequest)
 	}
