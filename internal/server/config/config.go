@@ -16,6 +16,7 @@ type Config struct {
 	Restore       bool          `env:"RESTORE"`        // Restore - восстановление из бекапа bool
 	Key           string        `env:"KEY"`            //Key - ключ шифрования
 	DBAddress     string        `env:"DATABASE_DSN"`   // DBAddress - адрес базы данных
+	CryptoKey     string        `env:"CRYPTO_KEY"`     // CryptoKey - путь до файла с приватным ключом
 }
 
 // New создает новый конфиг
@@ -31,6 +32,7 @@ func New() *Config {
 	flag.StringVar(&cfg.StoreFile, "f", "/tmp/devops-metrics-db.json", "directory for saving metrics")
 	flag.BoolVar(&cfg.Restore, "r", true, "recovering from backup before start")
 	flag.StringVar(&cfg.DBAddress, "d", "", "set the DB address")
+	flag.StringVar(&cfg.CryptoKey, "crypto-key", "", "private key file")
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {
