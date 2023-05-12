@@ -37,7 +37,8 @@ func (s *Sender) Go(value any, name string) {
 
 	body, err := s.encryptor.Encrypt(body)
 	if err != nil {
-		log.Println(err, body)
+		log.Println(err)
+		return
 	}
 	requestBody := bytes.NewBuffer(body)
 
