@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"log"
 	"os"
 )
@@ -59,7 +60,8 @@ func (e *Encryptor) GetKey(pathKey string, keyType string) (err error) {
 func (e *Encryptor) Encrypt(message []byte) (encryptString []byte, err error) {
 
 	if e.publicKey == nil {
-		return message, nil
+		err := fmt.Errorf("there is no public key")
+		return message, err
 	}
 
 	hash := sha256.New()
@@ -76,7 +78,8 @@ func (e *Encryptor) Encrypt(message []byte) (encryptString []byte, err error) {
 func (e *Encryptor) Decrypt(message []byte) (encryptString []byte, err error) {
 
 	if e.privateKey == nil {
-		return message, nil
+		err := fmt.Errorf("there is no private key")
+		return message, err
 	}
 
 	hash := sha256.New()
