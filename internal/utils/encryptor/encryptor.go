@@ -58,10 +58,6 @@ func (e *Encryptor) GetKey(pathKey string, keyType string) (err error) {
 
 func (e *Encryptor) Encrypt(message []byte) (encryptString []byte, err error) {
 
-	if e.publicKey == nil {
-		return message, nil
-	}
-
 	hash := sha256.New()
 	label := []byte("")
 
@@ -74,10 +70,6 @@ func (e *Encryptor) Encrypt(message []byte) (encryptString []byte, err error) {
 }
 
 func (e *Encryptor) Decrypt(message []byte) (encryptString []byte, err error) {
-
-	if e.publicKey == nil {
-		return message, nil
-	}
 
 	hash := sha256.New()
 	label := []byte("")
