@@ -34,7 +34,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := New(tt.args.hasher, tt.args.endpoint); !reflect.DeepEqual(got, tt.want) {
+			if got := New(tt.args.hasher, tt.args.endpoint, tt.want.encryptor); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("New() = %+v, want %+v", got, tt.want)
 			}
 		})
