@@ -82,9 +82,7 @@ func main() {
 	idleConnsClosed := make(chan struct{})
 
 	go func() {
-		sigint := make(chan os.Signal, 1)
-		signal.Notify(sigint, os.Interrupt)
-		<-sigint
+		<-sig
 
 		if err = server.Shutdown(context); err != nil {
 
