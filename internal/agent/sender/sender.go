@@ -51,7 +51,8 @@ func (s *Sender) Go(value any, name string) {
 
 	req := client.R().
 		SetHeader("Accept-Encoding", "gzip").
-		SetHeader("Content-Type", "application/json")
+		SetHeader("Content-Type", "application/json").
+		SetHeader("X-Real-IP", endpoint)
 
 	resp, err := req.SetBody(requestBody).Post(endpoint)
 	if err != nil {

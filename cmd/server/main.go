@@ -51,7 +51,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("%s", err)
 	}
-	handler := handlers.New(Storage, hasher, config.Restore, enc)
+	handler := handlers.New(Storage, hasher, config.Restore, config.TrustedSubnet, enc)
 	router := chi.NewRouter()
 	router.Mount("/", handler.Route())
 	router.Mount("/debug", middleware.Profiler())

@@ -36,7 +36,7 @@ func NewRouter() *chi.Mux {
 	var cfg config.Config
 	MemS := storage.New(keeper)
 	hasher := hasher.Mew("")
-	handler := New(MemS, hasher, cfg.Restore, nil)
+	handler := New(MemS, hasher, cfg.Restore, "", nil)
 
 	MemS.InsertMetric("Alloc", 123.000)
 	MemS.CountCounterMetric("PollCount", 34)
@@ -215,6 +215,6 @@ func TestHandler_collectJSONMetric(t *testing.T) {
 func Example() {
 	var keeper keeperMock
 	stormock := storage.New(keeper)
-	handler := New(stormock, hasher.Mew(""), false, nil)
+	handler := New(stormock, hasher.Mew(""), false, "", nil)
 	handler.Route()
 }

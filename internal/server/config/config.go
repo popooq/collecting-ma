@@ -20,6 +20,7 @@ type Config struct {
 	Key           string        `env:"KEY"`            //Key - ключ шифрования
 	CryptoKey     string        `env:"CRYPTO_KEY"`     // CryptoKey - путь до файла с приватным ключом
 	ConfigFile    string        `env:"CONFIG"`         // Config - путь до файла с конфигом сервера
+	TrustedSubnet string        `enc:"TRUSTED_SUBNET"` // trusted_subnet - список доверенных сетей
 }
 
 // New создает новый конфиг
@@ -37,6 +38,8 @@ func New() *Config {
 	flag.StringVar(&cfg.DBAddress, "d", "", "set the DB address")
 	flag.StringVar(&cfg.CryptoKey, "crypto-key", "", "private key file")
 	flag.StringVar(&cfg.ConfigFile, "c", "", "file of configuration")
+	flag.StringVar(&cfg.TrustedSubnet, "t", "", "trusted subnet")
+
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {

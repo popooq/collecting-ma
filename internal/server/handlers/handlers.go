@@ -34,9 +34,10 @@ const (
 type (
 	// Handler содержит информацию о хендлере
 	Handler struct {
-		storage   *storage.MetricsStorage
-		hasher    *hasher.Hash
-		encryptor *encryptor.Encryptor
+		storage       *storage.MetricsStorage
+		hasher        *hasher.Hash
+		encryptor     *encryptor.Encryptor
+		trustedSubnet string
 	}
 	gzipWriter struct {
 		http.ResponseWriter
@@ -45,7 +46,7 @@ type (
 )
 
 // New создает новый хендлер
-func New(stor *storage.MetricsStorage, hasher *hasher.Hash, restore bool, enc *encryptor.Encryptor) Handler {
+func New(stor *storage.MetricsStorage, hasher *hasher.Hash, restore bool, tsubnet string, enc *encryptor.Encryptor) Handler {
 	if restore {
 		err := stor.Load()
 		if err != nil {
@@ -53,9 +54,10 @@ func New(stor *storage.MetricsStorage, hasher *hasher.Hash, restore bool, enc *e
 		}
 	}
 	return Handler{
-		storage:   stor,
-		hasher:    hasher,
-		encryptor: enc,
+		storage:       stor,
+		hasher:        hasher,
+		encryptor:     enc,
+		trustedSubnet: tsubnet,
 	}
 
 }
@@ -68,6 +70,7 @@ func (h Handler) Route() *chi.Mux {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(h.trustedWare)
 
 	r.Post("/update/{mType}/{mName}/{mValue}", h.collectMetrics)
 	r.Get("/value/{mType}/{mName}", h.metricValue)
@@ -78,6 +81,16 @@ func (h Handler) Route() *chi.Mux {
 	r.Get("/ping", h.pingDB)
 
 	return r
+}
+
+func (h Handler) trustedWare(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ipStr := r.Header.Get("X-Real-IP")
+		if h.trustedSubnet != "" && ipStr != h.trustedSubnet {
+			w.WriteHeader(403)
+		}
+
+	})
 }
 
 func (h Handler) collectMetrics(w http.ResponseWriter, r *http.Request) {
