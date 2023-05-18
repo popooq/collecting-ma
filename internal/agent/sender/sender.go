@@ -11,20 +11,23 @@ import (
 
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
+	"github.com/popooq/collectimg-ma/internal/utils/encryptor"
 	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
 
 // Sender описывает sender
 type Sender struct {
-	hasher   *hasher.Hash
-	endpoint string
+	hasher     *hasher.Hash
+	endpoint   string
+	keyAddress string
 }
 
 // New создает новый Sender
-func New(hasher *hasher.Hash, endpoint string) Sender {
+func New(hasher *hasher.Hash, endpoint, keyAddress string) Sender {
 	return Sender{
-		hasher:   hasher,
-		endpoint: endpoint,
+		hasher:     hasher,
+		endpoint:   endpoint,
+		keyAddress: keyAddress,
 	}
 }
 
@@ -32,6 +35,13 @@ func New(hasher *hasher.Hash, endpoint string) Sender {
 func (s *Sender) Go(value any, name string) {
 	body := s.bodyBuild(value, name)
 
+	encryptor, _ := encryptor.New(s.keyAddress, "public")
+
+	body, err := encryptor.Encrypt(body)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 	requestBody := bytes.NewBuffer(body)
 
 	endpoint, err := url.JoinPath("http://", s.endpoint, "update/")
@@ -43,7 +53,8 @@ func (s *Sender) Go(value any, name string) {
 
 	req := client.R().
 		SetHeader("Accept-Encoding", "gzip").
-		SetHeader("Content-Type", "application/json")
+		SetHeader("Content-Type", "application/json").
+		SetHeader("X-Real-IP", endpoint)
 
 	resp, err := req.SetBody(requestBody).Post(endpoint)
 	if err != nil {

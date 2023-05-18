@@ -22,6 +22,7 @@ import (
 
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
+	"github.com/popooq/collectimg-ma/internal/utils/encryptor"
 	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
 
@@ -33,8 +34,10 @@ const (
 type (
 	// Handler содержит информацию о хендлере
 	Handler struct {
-		storage *storage.MetricsStorage
-		hasher  *hasher.Hash
+		storage       *storage.MetricsStorage
+		hasher        *hasher.Hash
+		encryptor     string
+		trustedSubnet string
 	}
 	gzipWriter struct {
 		http.ResponseWriter
@@ -43,7 +46,7 @@ type (
 )
 
 // New создает новый хендлер
-func New(stor *storage.MetricsStorage, hasher *hasher.Hash, restore bool) Handler {
+func New(stor *storage.MetricsStorage, hasher *hasher.Hash, restore bool, tsubnet, enc string) Handler {
 	if restore {
 		err := stor.Load()
 		if err != nil {
@@ -51,8 +54,10 @@ func New(stor *storage.MetricsStorage, hasher *hasher.Hash, restore bool) Handle
 		}
 	}
 	return Handler{
-		storage: stor,
-		hasher:  hasher,
+		storage:       stor,
+		hasher:        hasher,
+		encryptor:     enc,
+		trustedSubnet: tsubnet,
 	}
 
 }
@@ -65,6 +70,7 @@ func (h Handler) Route() *chi.Mux {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(h.trustedWare)
 
 	r.Post("/update/{mType}/{mName}/{mValue}", h.collectMetrics)
 	r.Get("/value/{mType}/{mName}", h.metricValue)
@@ -75,6 +81,16 @@ func (h Handler) Route() *chi.Mux {
 	r.Get("/ping", h.pingDB)
 
 	return r
+}
+
+func (h Handler) trustedWare(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ipStr := r.Header.Get("X-Real-IP")
+		if h.trustedSubnet != "" && ipStr != h.trustedSubnet {
+			w.WriteHeader(403)
+		}
+
+	})
 }
 
 func (h Handler) collectMetrics(w http.ResponseWriter, r *http.Request) {
@@ -172,6 +188,11 @@ func (h Handler) collectJSONMetric(w http.ResponseWriter, r *http.Request) {
 		log.Printf("error during ReadAll: %s", err)
 	}
 
+	encryptor, _ := encryptor.New(h.encryptor, "private")
+	body, err = encryptor.Decrypt(body)
+	if err != nil {
+		log.Panicln(err)
+	}
 	encoder := encoder.New()
 
 	err = encoder.Unmarshal(body)
@@ -216,7 +237,19 @@ func (h Handler) collectJSONMetric(w http.ResponseWriter, r *http.Request) {
 func (h Handler) metricJSONValue(w http.ResponseWriter, r *http.Request) {
 	encoder := encoder.New()
 
-	err := encoder.Decode(r.Body)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+
+		log.Println("read request body error!")
+	}
+
+	encryptor, _ := encryptor.New(h.encryptor, "private")
+	body, err = encryptor.Decrypt(body)
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = encoder.Unmarshal(body)
 	if err != nil {
 		http.Error(w, fmt.Sprintln("something went wrong while decoding", err), http.StatusBadRequest)
 	}

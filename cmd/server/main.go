@@ -6,6 +6,9 @@ import (
 	"log"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -44,7 +47,7 @@ func main() {
 		Storage = storage.New(saver)
 	}
 
-	handler := handlers.New(Storage, hasher, config.Restore)
+	handler := handlers.New(Storage, hasher, config.Restore, config.TrustedSubnet, config.CryptoKey)
 	router := chi.NewRouter()
 	router.Mount("/", handler.Route())
 	router.Mount("/debug", middleware.Profiler())
@@ -64,5 +67,31 @@ func main() {
 	}
 	fmt.Println("Build commit: N/A")
 
-	log.Fatal(http.ListenAndServe(config.Address, handlers.GzipHandler(router)))
+	server := &http.Server{
+		Addr:    config.Address,
+		Handler: router,
+	}
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	idleConnsClosed := make(chan struct{})
+
+	go func() {
+		<-sig
+
+		if err := server.Shutdown(context); err != nil {
+
+			log.Printf("\nHTTP server Shutdown: %v", err)
+		}
+		close(idleConnsClosed)
+	}()
+
+	err := server.ListenAndServe()
+	if err != nil && err != http.ErrServerClosed {
+		log.Fatal(err)
+	}
+
+	<-idleConnsClosed
+
 }
