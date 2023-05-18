@@ -36,7 +36,7 @@ type (
 	Handler struct {
 		storage       *storage.MetricsStorage
 		hasher        *hasher.Hash
-		encryptor     *encryptor.Encryptor
+		encryptor     string
 		trustedSubnet string
 	}
 	gzipWriter struct {
@@ -46,7 +46,7 @@ type (
 )
 
 // New создает новый хендлер
-func New(stor *storage.MetricsStorage, hasher *hasher.Hash, restore bool, tsubnet string, enc *encryptor.Encryptor) Handler {
+func New(stor *storage.MetricsStorage, hasher *hasher.Hash, restore bool, tsubnet, enc string) Handler {
 	if restore {
 		err := stor.Load()
 		if err != nil {
@@ -188,7 +188,8 @@ func (h Handler) collectJSONMetric(w http.ResponseWriter, r *http.Request) {
 		log.Printf("error during ReadAll: %s", err)
 	}
 
-	body, err = h.encryptor.Decrypt(body)
+	encryptor, _ := encryptor.New(h.encryptor, "private")
+	body, err = encryptor.Decrypt(body)
 	if err != nil {
 		log.Panicln(err)
 	}
@@ -242,7 +243,8 @@ func (h Handler) metricJSONValue(w http.ResponseWriter, r *http.Request) {
 		log.Println("read request body error!")
 	}
 
-	body, err = h.encryptor.Decrypt(body)
+	encryptor, _ := encryptor.New(h.encryptor, "private")
+	body, err = encryptor.Decrypt(body)
 	if err != nil {
 		log.Println(err)
 	}

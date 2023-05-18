@@ -17,7 +17,6 @@ import (
 	"github.com/popooq/collectimg-ma/internal/server/handlers"
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/dbsaver"
-	"github.com/popooq/collectimg-ma/internal/utils/encryptor"
 	"github.com/popooq/collectimg-ma/internal/utils/filesaver"
 	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
@@ -47,11 +46,8 @@ func main() {
 		}
 		Storage = storage.New(saver)
 	}
-	enc, err := encryptor.New(config.CryptoKey, "private")
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-	handler := handlers.New(Storage, hasher, config.Restore, config.TrustedSubnet, enc)
+
+	handler := handlers.New(Storage, hasher, config.Restore, config.TrustedSubnet, config.CryptoKey)
 	router := chi.NewRouter()
 	router.Mount("/", handler.Route())
 	router.Mount("/debug", middleware.Profiler())
@@ -84,14 +80,14 @@ func main() {
 	go func() {
 		<-sig
 
-		if err = server.Shutdown(context); err != nil {
+		if err := server.Shutdown(context); err != nil {
 
 			log.Printf("\nHTTP server Shutdown: %v", err)
 		}
 		close(idleConnsClosed)
 	}()
 
-	err = server.ListenAndServe()
+	err := server.ListenAndServe()
 	if err != nil && err != http.ErrServerClosed {
 		log.Fatal(err)
 	}
