@@ -17,17 +17,17 @@ import (
 
 // Sender описывает sender
 type Sender struct {
-	hasher    *hasher.Hash
-	endpoint  string
-	encryptor *encryptor.Encryptor
+	hasher     *hasher.Hash
+	endpoint   string
+	keyAddress string
 }
 
 // New создает новый Sender
-func New(hasher *hasher.Hash, endpoint string, encryptor *encryptor.Encryptor) Sender {
+func New(hasher *hasher.Hash, endpoint, keyAddress string) Sender {
 	return Sender{
-		hasher:    hasher,
-		endpoint:  endpoint,
-		encryptor: encryptor,
+		hasher:     hasher,
+		endpoint:   endpoint,
+		keyAddress: keyAddress,
 	}
 }
 
@@ -35,7 +35,9 @@ func New(hasher *hasher.Hash, endpoint string, encryptor *encryptor.Encryptor) S
 func (s *Sender) Go(value any, name string) {
 	body := s.bodyBuild(value, name)
 
-	body, err := s.encryptor.Encrypt(body)
+	encryptor, _ := encryptor.New(s.keyAddress, "public")
+
+	body, err := encryptor.Encrypt(body)
 	if err != nil {
 		log.Println(err)
 		return

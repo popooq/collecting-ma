@@ -30,10 +30,11 @@ func (e *Encryptor) GetKey(pathKey string, keyType string) (err error) {
 
 	pemString, err = os.ReadFile(pathKey)
 	if err != nil {
-		log.Println("no key for encrypt")
+		log.Println("no key for encrypt in", pathKey, err)
 		return nil
 	}
 
+	log.Printf("%s", pemString)
 	block, _ := pem.Decode(pemString)
 
 	switch keyType {

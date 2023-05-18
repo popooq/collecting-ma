@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -9,18 +8,14 @@ import (
 	"github.com/popooq/collectimg-ma/internal/agent/config"
 	"github.com/popooq/collectimg-ma/internal/agent/metricsreader"
 	"github.com/popooq/collectimg-ma/internal/agent/sender"
-	"github.com/popooq/collectimg-ma/internal/utils/encryptor"
 	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
 
 func main() {
 	cfg := config.New()
 	hshr := hasher.Mew(cfg.Key)
-	enc, err := encryptor.New(cfg.CryptoKey, "public")
-	if err != nil {
-		log.Fatalf("%s", err)
-	}
-	sndr := sender.New(hshr, cfg.Address, enc)
+
+	sndr := sender.New(hshr, cfg.Address, cfg.CryptoKey)
 	reader := metricsreader.New(sndr, cfg.PollInterval, cfg.ReportInterval, cfg.Address, cfg.Rate)
 
 	sigs := make(chan os.Signal, 1)
