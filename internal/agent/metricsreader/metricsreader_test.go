@@ -85,7 +85,7 @@ func Test_worker_queueTask(t *testing.T) {
 				workchan: make(chan metrics, 100),
 				buffer:   100,
 				wg:       new(sync.WaitGroup),
-				sndr:     sender.New(hasher.Mew(""), "127.0.0.1:8080", nil),
+				sndr:     sender.New(hasher.Mew(""), "127.0.0.1:8080", ""),
 			},
 			args: args{
 				mem: metrics{
