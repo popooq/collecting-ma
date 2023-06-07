@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package metrics;
+
+option go_package = "collecting-ma/proto";
+
+message Metric {
+    string ID = 1;
+    string mtype = 2;
+    int64 delta = 3;
+    double value = 4;
+    string hash = 5;
+}
+
+message AddMetricRequest{
+    Metric metric = 1;
+}
+
+message AddMetricResponse{
+    string error = 4;
+}
+
+message GetMetricRequest{
+    string ID = 1;
+    string mtype = 2;
+}
+
+message GetMetricResponse{
+    string ID = 1;
+    int64 delta = 2;
+    double value = 3;
+    string error = 4;
+}
+
+message ListMetricRequest {
+    int32 offset = 1;
+    int32 limit = 2; 
+}
+  
+message ListMetricResponse {
+    int32 count = 1;            
+    repeated Metric metric = 2;
+}
+
+service Metrics {
+    rpc AddMetric(AddMetricRequest) returns (AddMetricResponse);
+    rpc GetMetric(GetMetricRequest) returns (GetMetricResponse);
+    rpc ListMetric(ListMetricRequest) returns (ListMetricResponse);
+}

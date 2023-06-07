@@ -17,7 +17,7 @@ type Config struct {
 	StoreInterval time.Duration `env:"STORE_INTERVAL"` // StoreInterval - период сохранения метрик
 	StoreFile     string        `env:"STORE_FILE"`     // Storefile - адрес файла для хранения метрик
 	DBAddress     string        `env:"DATABASE_DSN"`   // DBAddress - адрес базы данных
-	Key           string        `env:"KEY"`            //Key - ключ шифрования
+	Key           string        `env:"KEY"`            // Key - ключ шифрования
 	CryptoKey     string        `env:"CRYPTO_KEY"`     // CryptoKey - путь до файла с приватным ключом
 	ConfigFile    string        `env:"CONFIG"`         // Config - путь до файла с конфигом сервера
 	TrustedSubnet string        `enc:"TRUSTED_SUBNET"` // trusted_subnet - список доверенных сетей

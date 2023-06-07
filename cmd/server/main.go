@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -12,13 +13,16 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"google.golang.org/grpc"
 
 	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/server/handlers"
+	"github.com/popooq/collectimg-ma/internal/server/handlersproto"
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/dbsaver"
 	"github.com/popooq/collectimg-ma/internal/utils/filesaver"
 	"github.com/popooq/collectimg-ma/internal/utils/hasher"
+	pb "github.com/popooq/collectimg-ma/proto"
 )
 
 var (
@@ -94,4 +98,28 @@ func main() {
 
 	<-idleConnsClosed
 
+	err = protoserver(Storage)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func protoserver(storage *storage.MetricsStorage) error {
+	listen, err := net.Listen("tcp", ":3200")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	s := grpc.NewServer()
+
+	metricServer := handlersproto.NewMetricServer(storage)
+	pb.RegisterMetricsServer(s, &metricServer)
+
+	fmt.Println("Сервер gRPC начал работу")
+
+	if err := s.Serve(listen); err != nil {
+		log.Fatal(err)
+		return err
+	}
+	return err
 }

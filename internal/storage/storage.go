@@ -18,6 +18,7 @@ type (
 		GetMetricJSONGauge(name string) (*float64, error)
 		GetMetricJSONCounter(name string) (*int64, error)
 		InsertMetrics(metric encoder.Encode) error
+		AllMetric() (map[string]float64, map[string]int64)
 	}
 
 	// Keeper интерфейс сохранения метрик
@@ -203,4 +204,8 @@ func (ms *MetricsStorage) Load() error {
 		}
 	}
 	return nil
+}
+
+func (ms *MetricsStorage) AllMetric() (map[string]float64, map[string]int64) {
+	return ms.MetricsGauge, ms.MetricsCounter
 }

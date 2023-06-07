@@ -72,12 +72,12 @@ func (h Handler) Route() *chi.Mux {
 	r.Use(middleware.Recoverer)
 	r.Use(h.trustedWare)
 
-	r.Post("/update/{mType}/{mName}/{mValue}", h.collectMetrics)
-	r.Get("/value/{mType}/{mName}", h.metricValue)
-	r.Post("/update/", h.collectJSONMetric)
-	r.Post("/value/", h.metricJSONValue)
-	r.Post("/updates/", h.collectDBMetrics)
-	r.Get("/", h.allMetrics)
+	r.Post("/update/{mType}/{mName}/{mValue}", h.addMetrics)
+	r.Get("/value/{mType}/{mName}", h.getMetric)
+	r.Post("/update/", h.addJSONMetric)
+	r.Post("/value/", h.getMetricJSON)
+	r.Post("/updates/", h.addDBMetrics)
+	r.Get("/", h.getAllMetrics)
 	r.Get("/ping", h.pingDB)
 
 	return r
@@ -93,7 +93,7 @@ func (h Handler) trustedWare(next http.Handler) http.Handler {
 	})
 }
 
-func (h Handler) collectMetrics(w http.ResponseWriter, r *http.Request) {
+func (h Handler) addMetrics(w http.ResponseWriter, r *http.Request) {
 	metricTypeParam := chi.URLParam(r, "mType")
 	metricNameParam := chi.URLParam(r, "mName")
 	metricValueParam := chi.URLParam(r, "mValue")
@@ -130,7 +130,7 @@ func (h Handler) collectMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h Handler) metricValue(w http.ResponseWriter, r *http.Request) {
+func (h Handler) getMetric(w http.ResponseWriter, r *http.Request) {
 	var metricValue string
 
 	metricTypeParam := chi.URLParam(r, "mType")
@@ -169,7 +169,7 @@ func (h Handler) metricValue(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h Handler) allMetrics(w http.ResponseWriter, r *http.Request) {
+func (h Handler) getAllMetrics(w http.ResponseWriter, r *http.Request) {
 	allMetrics := h.storage.GetAllMetrics()
 	listOfMetrics := fmt.Sprintf("%+v", allMetrics)
 
@@ -182,7 +182,7 @@ func (h Handler) allMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h Handler) collectJSONMetric(w http.ResponseWriter, r *http.Request) {
+func (h Handler) addJSONMetric(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("error during ReadAll: %s", err)
@@ -234,7 +234,7 @@ func (h Handler) collectJSONMetric(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h Handler) metricJSONValue(w http.ResponseWriter, r *http.Request) {
+func (h Handler) getMetricJSON(w http.ResponseWriter, r *http.Request) {
 	encoder := encoder.New()
 
 	body, err := io.ReadAll(r.Body)
@@ -308,7 +308,7 @@ func (h Handler) pingDB(w http.ResponseWriter, r *http.Request) {
 	w.Write(nil)
 }
 
-func (h Handler) collectDBMetrics(w http.ResponseWriter, r *http.Request) {
+func (h Handler) addDBMetrics(w http.ResponseWriter, r *http.Request) {
 	var Metrics []encoder.Encode
 
 	body, err := io.ReadAll(r.Body)
