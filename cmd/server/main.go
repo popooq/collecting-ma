@@ -91,17 +91,21 @@ func main() {
 		close(idleConnsClosed)
 	}()
 
-	err := server.ListenAndServe()
-	if err != nil && err != http.ErrServerClosed {
+	if !config.GRPC {
+		log.Println("starting server over http/1")
+		err := server.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+	}
+
+	log.Println("starting server over http/2")
+	err := protoserver(Storage)
+	if err != nil {
 		log.Fatal(err)
 	}
 
 	<-idleConnsClosed
-
-	err = protoserver(Storage)
-	if err != nil {
-		log.Fatal(err)
-	}
 }
 
 func protoserver(storage *storage.MetricsStorage) error {
