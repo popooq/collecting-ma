@@ -108,6 +108,7 @@ func MetricRequest(c pb.MetricsClient, sigs chan os.Signal) {
 	for shutdown {
 		select {
 		case <-sigs:
+			log.Println("shutdowning the client")
 			shutdown = false
 		case <-tickerpoll.C:
 			runtime.ReadMemStats(&memStat)

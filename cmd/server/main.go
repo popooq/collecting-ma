@@ -100,15 +100,6 @@ func main() {
 	}
 
 	log.Println("starting server over http/2")
-	err := protoserver(Storage)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	<-idleConnsClosed
-}
-
-func protoserver(storage *storage.MetricsStorage) error {
 	listen, err := net.Listen("tcp", ":3200")
 	if err != nil {
 		log.Fatal(err)
@@ -116,14 +107,21 @@ func protoserver(storage *storage.MetricsStorage) error {
 
 	s := grpc.NewServer()
 
-	metricServer := handlersproto.NewMetricServer(storage)
+	go func() {
+		<-sig
+
+		s.GracefulStop()
+		log.Println("gRRC server shutdown")
+		close(idleConnsClosed)
+	}()
+	metricServer := handlersproto.NewMetricServer(Storage)
 	pb.RegisterMetricsServer(s, &metricServer)
 
 	fmt.Println("Сервер gRPC начал работу")
 
 	if err := s.Serve(listen); err != nil {
 		log.Fatal(err)
-		return err
 	}
-	return err
+
+	<-idleConnsClosed
 }
