@@ -39,5 +39,5 @@ func main() {
 
 	client := pb.NewMetricsClient(conn)
 
-	protoreader.MetricRequest(client)
+	protoreader.MetricRequest(client, sigs)
 }

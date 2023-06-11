@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
 
 	pb "github.com/popooq/collectimg-ma/proto"
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/mem"
 )
 
 type metrics struct {
@@ -85,15 +84,16 @@ func (w *worker) queueTask(mem metrics) error {
 	log.Println(w.workchan)
 	return nil
 }
-func MetricRequest(c pb.MetricsClient) {
+func MetricRequest(c pb.MetricsClient, sigs chan os.Signal) {
 	var (
-		memStat        runtime.MemStats
-		memoryStat     *mem.VirtualMemoryStat
-		cpuUsage       []float64
-		tickerpoll     = time.NewTicker(5)
-		tickerreport   = time.NewTicker(10)
-		graceperiod    = 15 * time.Second
-		goroutinestest = 6
+		memStat runtime.MemStats
+		// memoryStat     *mem.VirtualMemoryStat
+		// cpuUsage       []float64
+		tickerpoll          = time.NewTicker(5)
+		tickerreport        = time.NewTicker(10)
+		graceperiod         = 15 * time.Second
+		goroutinestest      = 6
+		shutdown       bool = true
 	)
 
 	ctx := context.Background()
@@ -105,12 +105,14 @@ func MetricRequest(c pb.MetricsClient) {
 		w.stop()
 		cancel()
 	}()
-	for {
+	for shutdown {
 		select {
+		case <-sigs:
+			shutdown = false
 		case <-tickerpoll.C:
 			runtime.ReadMemStats(&memStat)
-			memoryStat, _ = mem.VirtualMemory()
-			cpuUsage, _ = cpu.Percent(0, false)
+			// memoryStat, _ = mem.VirtualMemory()
+			// cpuUsage, _ = cpu.Percent(0, false)
 		case <-tickerreport.C:
 			random := float64(rand.Uint32())
 			mem := memStat
@@ -145,8 +147,8 @@ func MetricRequest(c pb.MetricsClient) {
 				{float64(mem.Sys), "Sys", c},
 				{float64(mem.TotalAlloc), "TotalAlloc", c},
 				//	{float64(memoryStat.Total), "TotalMemory", c},
-				{float64(memoryStat.Free), "FreeMemory", c},
-				{float64(cpuUsage[0]), "CPUutilization1", c},
+				// {float64(memoryStat.Free), "FreeMemory", c},
+				// {float64(cpuUsage[0]), "CPUutilization1", c},
 			}
 			for _, mem := range memslice {
 				w.queueTask(mem)
