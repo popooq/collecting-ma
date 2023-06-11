@@ -3,9 +3,11 @@ package protoreader
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"math/rand"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -155,4 +157,36 @@ func MetricRequest(c pb.MetricsClient) {
 
 func send(c pb.MetricsClient, name string, value any) {
 
+	metric := &pb.Metric{}
+
+	types := strings.ToLower(strings.TrimPrefix(fmt.Sprintf("%T", value), "storage."))
+
+	metric.Mtype = types
+
+	switch metric.Mtype {
+	case "float64":
+		assertvalue, ok := value.(float64)
+		if !ok {
+			log.Printf("conversion failed")
+		}
+		metric.ID = name
+		metric.Value = assertvalue
+	case "counter":
+		assertvalue, ok := value.(int64)
+		if !ok {
+			log.Printf("conversion failed")
+		}
+		metric.ID = name
+		metric.Delta = assertvalue
+	}
+
+	resp, err := c.AddMetric(context.Background(), &pb.AddMetricRequest{
+		Metric: metric,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	if resp.Error != "" {
+		log.Fatal(resp.Error)
+	}
 }
