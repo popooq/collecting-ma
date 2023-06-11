@@ -20,6 +20,7 @@ type Config struct {
 	Rate           int           `env:"RATE_LIMIT"`      // Rate - количество единовременных потоков
 	CryptoKey      string        `env:"CRYPTO_KEY"`      // CryptoKey - путь до файла с публичным ключом
 	ConfigFile     string        `env:"CONFIG"`          // Config - путь до файла с конфигом агента
+	GRPC           bool          `env:"GRPC"`            // GRPC - работа на gRPC
 }
 
 // New создает новый конфиг
@@ -37,6 +38,7 @@ func New() *Config {
 	flag.DurationVar(&cfg.ReportInterval, "r", reportTime, "metric send timer")
 	flag.IntVar(&cfg.Rate, "l", 100, "worker rate")
 	flag.StringVar(&cfg.ConfigFile, "c", "", "file of configuration")
+	flag.BoolVar(&cfg.GRPC, "g", true, "working over gRPC")
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {

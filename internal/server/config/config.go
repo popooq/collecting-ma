@@ -21,7 +21,7 @@ type Config struct {
 	CryptoKey     string        `env:"CRYPTO_KEY"`     // CryptoKey - путь до файла с приватным ключом
 	ConfigFile    string        `env:"CONFIG"`         // Config - путь до файла с конфигом сервера
 	TrustedSubnet string        `enc:"TRUSTED_SUBNET"` // trusted_subnet - список доверенных сетей
-	GRPC          bool          `enc:"PROTOBUF"`       // GRPC - работа на gRPC bool
+	GRPC          bool          `enc:"GRPC"`           // GRPC - работа на gRPC bool
 }
 
 // New создает новый конфиг
@@ -40,7 +40,7 @@ func New() *Config {
 	flag.StringVar(&cfg.CryptoKey, "crypto-key", "", "private key file")
 	flag.StringVar(&cfg.ConfigFile, "c", "", "file of configuration")
 	flag.StringVar(&cfg.TrustedSubnet, "t", "", "trusted subnet")
-	flag.BoolVar(&cfg.GRPC, "p", true, "start server over gRPC")
+	flag.BoolVar(&cfg.GRPC, "g", true, "start server over gRPC")
 
 	flag.Parse()
 

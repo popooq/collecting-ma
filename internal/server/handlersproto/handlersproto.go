@@ -3,6 +3,7 @@ package handlersproto
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/popooq/collectimg-ma/internal/storage"
@@ -10,8 +11,8 @@ import (
 )
 
 const (
-	gauge   string = "gauge"
-	counter string = "counter"
+	gauge   string = "float64"
+	counter string = "int64"
 )
 
 type MetricsServer struct {
@@ -32,6 +33,7 @@ func (s *MetricsServer) AddMetric(ctx context.Context, in *pb.AddMetricRequest) 
 	switch {
 	case in.Metric.Mtype == gauge:
 		s.storage.InsertMetric(in.Metric.ID, in.Metric.Value)
+		log.Printf("add metric %s", in.Metric.ID)
 	case in.Metric.Mtype == counter:
 		s.storage.CountCounterMetric(in.Metric.ID, in.Metric.Delta)
 	}

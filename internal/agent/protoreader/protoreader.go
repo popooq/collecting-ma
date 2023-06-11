@@ -90,8 +90,8 @@ func MetricRequest(c pb.MetricsClient) {
 		memStat        runtime.MemStats
 		memoryStat     *mem.VirtualMemoryStat
 		cpuUsage       []float64
-		tickerpoll     = time.NewTicker(3)
-		tickerreport   = time.NewTicker(5)
+		tickerpoll     = time.NewTicker(5)
+		tickerreport   = time.NewTicker(10)
 		graceperiod    = 15 * time.Second
 		goroutinestest = 6
 	)
@@ -144,7 +144,7 @@ func MetricRequest(c pb.MetricsClient) {
 				{float64(mem.StackSys), "StackSys", c},
 				{float64(mem.Sys), "Sys", c},
 				{float64(mem.TotalAlloc), "TotalAlloc", c},
-				{float64(memoryStat.Total), "TotalMemory", c},
+				//	{float64(memoryStat.Total), "TotalMemory", c},
 				{float64(memoryStat.Free), "FreeMemory", c},
 				{float64(cpuUsage[0]), "CPUutilization1", c},
 			}
@@ -184,9 +184,9 @@ func send(c pb.MetricsClient, name string, value any) {
 		Metric: metric,
 	})
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("err %s", err)
 	}
 	if resp.Error != "" {
-		log.Fatal(resp.Error)
+		log.Fatalf("resp err %s", resp.Error)
 	}
 }
