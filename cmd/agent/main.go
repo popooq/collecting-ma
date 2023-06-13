@@ -18,16 +18,16 @@ import (
 )
 
 func main() {
-	cfg := config.New()
-	hshr := hasher.Mew(cfg.Key)
+	config := config.New()
+	hshr := hasher.New(config.Key)
 
-	sndr := sender.New(hshr, cfg.Address, cfg.CryptoKey)
-	reader := metricsreader.New(sndr, cfg.PollInterval, cfg.ReportInterval, cfg.Address, cfg.Rate)
+	sndr := sender.New(hshr, config.Address, config.CryptoKey)
+	reader := metricsreader.New(sndr, config.PollInterval, config.ReportInterval, config.Address, config.Rate)
 
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
-	if !cfg.GRPC {
+	if !config.GRPC {
 		reader.Run(sigs)
 	}
 	conn, err := grpc.Dial(":3200", grpc.WithTransportCredentials(insecure.NewCredentials()))
@@ -39,5 +39,5 @@ func main() {
 
 	client := pb.NewMetricsClient(conn)
 
-	protoreader.MetricRequest(client, sigs)
+	protoreader.MetricRequest(client, sigs, config.PollInterval, config.ReportInterval, config.Rate, *hshr)
 }

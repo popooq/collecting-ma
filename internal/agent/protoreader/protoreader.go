@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 	pb "github.com/popooq/collectimg-ma/proto"
 )
 
@@ -19,6 +20,7 @@ type metrics struct {
 	value  any
 	name   string
 	client pb.MetricsClient // пипец временное решение
+	hash   hasher.Hash
 }
 
 type worker struct {
@@ -69,7 +71,7 @@ func (w *worker) spawnWorkers(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
-			send(work.client, work.name, work.value)
+			send(work.client, work.name, work.value, work.hash)
 		}
 	}
 }
@@ -84,20 +86,19 @@ func (w *worker) queueTask(mem metrics) error {
 	log.Println(w.workchan)
 	return nil
 }
-func MetricRequest(c pb.MetricsClient, sigs chan os.Signal) {
+func MetricRequest(c pb.MetricsClient, sigs chan os.Signal, poll time.Duration, report time.Duration, rate int, hash hasher.Hash) {
 	var (
 		memStat runtime.MemStats
 		// memoryStat     *mem.VirtualMemoryStat
 		// cpuUsage       []float64
-		tickerpoll          = time.NewTicker(5)
-		tickerreport        = time.NewTicker(10)
-		graceperiod         = 15 * time.Second
-		goroutinestest      = 6
-		shutdown       bool = true
+		tickerpoll        = time.NewTicker(poll)
+		tickerreport      = time.NewTicker(report)
+		graceperiod       = 15 * time.Second
+		shutdown     bool = true
 	)
 
 	ctx := context.Background()
-	w := newWorker(goroutinestest)
+	w := newWorker(rate)
 
 	w.start(ctx)
 	_, cancel := context.WithTimeout(ctx, graceperiod)
@@ -118,38 +119,38 @@ func MetricRequest(c pb.MetricsClient, sigs chan os.Signal) {
 			random := float64(rand.Uint32())
 			mem := memStat
 			memslice := []metrics{
-				{random, "RandomValue", c},
-				//{r.pollCount, "PollCount", c},
-				{float64(mem.Alloc), "Alloc", c},
-				{float64(mem.BuckHashSys), "BuckHashSys", c},
-				{float64(mem.Frees), "Frees", c},
-				{mem.GCCPUFraction, "GCCPUFraction", c},
-				{float64(mem.GCSys), "GCSys", c},
-				{float64(mem.HeapAlloc), "HeapAlloc", c},
-				{float64(mem.HeapIdle), "HeapIdle", c},
-				{float64(mem.HeapInuse), "HeapInuse", c},
-				{float64(mem.HeapObjects), "HeapObjects", c},
-				{float64(mem.HeapReleased), "HeapReleased", c},
-				{float64(mem.HeapSys), "HeapSys", c},
-				{float64(mem.LastGC), "LastGC", c},
-				{float64(mem.Lookups), "Lookups", c},
-				{float64(mem.MCacheInuse), "MCacheInuse", c},
-				{float64(mem.MCacheSys), "MCacheSys", c},
-				{float64(mem.MSpanInuse), "MSpanInuse", c},
-				{float64(mem.MSpanSys), "MSpanSys", c},
-				{float64(mem.Mallocs), "Mallocs", c},
-				{float64(mem.NextGC), "NextGC", c},
-				{float64(mem.NumForcedGC), "NumForcedGC", c},
-				{float64(mem.NumGC), "NumGC", c},
-				{float64(mem.OtherSys), "OtherSys", c},
-				{float64(mem.PauseTotalNs), "PauseTotalNs", c},
-				{float64(mem.StackInuse), "StackInuse", c},
-				{float64(mem.StackSys), "StackSys", c},
-				{float64(mem.Sys), "Sys", c},
-				{float64(mem.TotalAlloc), "TotalAlloc", c},
-				//	{float64(memoryStat.Total), "TotalMemory", c},
-				// {float64(memoryStat.Free), "FreeMemory", c},
-				// {float64(cpuUsage[0]), "CPUutilization1", c},
+				{random, "RandomValue", c, hash},
+				//{r.pollCount, "PollCount", c, hash},
+				{float64(mem.Alloc), "Alloc", c, hash},
+				{float64(mem.BuckHashSys), "BuckHashSys", c, hash},
+				{float64(mem.Frees), "Frees", c, hash},
+				{mem.GCCPUFraction, "GCCPUFraction", c, hash},
+				{float64(mem.GCSys), "GCSys", c, hash},
+				{float64(mem.HeapAlloc), "HeapAlloc", c, hash},
+				{float64(mem.HeapIdle), "HeapIdle", c, hash},
+				{float64(mem.HeapInuse), "HeapInuse", c, hash},
+				{float64(mem.HeapObjects), "HeapObjects", c, hash},
+				{float64(mem.HeapReleased), "HeapReleased", c, hash},
+				{float64(mem.HeapSys), "HeapSys", c, hash},
+				{float64(mem.LastGC), "LastGC", c, hash},
+				{float64(mem.Lookups), "Lookups", c, hash},
+				{float64(mem.MCacheInuse), "MCacheInuse", c, hash},
+				{float64(mem.MCacheSys), "MCacheSys", c, hash},
+				{float64(mem.MSpanInuse), "MSpanInuse", c, hash},
+				{float64(mem.MSpanSys), "MSpanSys", c, hash},
+				{float64(mem.Mallocs), "Mallocs", c, hash},
+				{float64(mem.NextGC), "NextGC", c, hash},
+				{float64(mem.NumForcedGC), "NumForcedGC", c, hash},
+				{float64(mem.NumGC), "NumGC", c, hash},
+				{float64(mem.OtherSys), "OtherSys", c, hash},
+				{float64(mem.PauseTotalNs), "PauseTotalNs", c, hash},
+				{float64(mem.StackInuse), "StackInuse", c, hash},
+				{float64(mem.StackSys), "StackSys", c, hash},
+				{float64(mem.Sys), "Sys", c, hash},
+				{float64(mem.TotalAlloc), "TotalAlloc", c, hash},
+				//	{float64(memoryStat.Total), "TotalMemory", c, hash},
+				// {float64(memoryStat.Free), "FreeMemory", c, hash},
+				// {float64(cpuUsage[0]), "CPUutilization1", c, hash},
 			}
 			for _, mem := range memslice {
 				w.queueTask(mem)
@@ -158,7 +159,7 @@ func MetricRequest(c pb.MetricsClient, sigs chan os.Signal) {
 	}
 }
 
-func send(c pb.MetricsClient, name string, value any) {
+func send(c pb.MetricsClient, name string, value any, hasher hasher.Hash) {
 
 	metric := &pb.Metric{}
 
@@ -181,6 +182,13 @@ func send(c pb.MetricsClient, name string, value any) {
 		}
 		metric.ID = name
 		metric.Delta = assertvalue
+	}
+
+	hash := hasher.HashergRPC(metric)
+
+	err := hasher.HashCheckergRPC(hash, metric)
+	if err != nil {
+		log.Printf("error: %s", err)
 	}
 
 	resp, err := c.AddMetric(context.Background(), &pb.AddMetricRequest{

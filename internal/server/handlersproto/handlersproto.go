@@ -2,12 +2,13 @@ package handlersproto
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"net/http"
 
 	"github.com/popooq/collectimg-ma/internal/storage"
+	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 	pb "github.com/popooq/collectimg-ma/proto"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -19,11 +20,19 @@ type MetricsServer struct {
 	pb.UnimplementedMetricsServer
 
 	storage *storage.MetricsStorage
+	hasher  *hasher.Hash
 }
 
-func NewMetricServer(storage *storage.MetricsStorage) MetricsServer {
+func NewMetricServer(storage *storage.MetricsStorage, hasher *hasher.Hash, restore bool) MetricsServer {
+	if restore {
+		err := storage.Load()
+		if err != nil {
+			log.Printf("error during load from file %s", err)
+		}
+	}
 	return MetricsServer{
 		storage: storage,
+		hasher:  hasher,
 	}
 }
 
@@ -33,10 +42,11 @@ func (s *MetricsServer) AddMetric(ctx context.Context, in *pb.AddMetricRequest) 
 	switch {
 	case in.Metric.Mtype == gauge:
 		s.storage.InsertMetric(in.Metric.ID, in.Metric.Value)
-		log.Printf("add metric %s", in.Metric.ID)
 	case in.Metric.Mtype == counter:
 		s.storage.CountCounterMetric(in.Metric.ID, in.Metric.Delta)
 	}
+
+	in.Metric.Hash = s.hasher.HashergRPC(in.Metric)
 
 	return &responce, nil
 }
@@ -49,12 +59,12 @@ func (s *MetricsServer) GetMetric(ctx context.Context, in *pb.GetMetricRequest) 
 	case in.Mtype == gauge:
 		responce.Value, err = s.storage.GetMetricGauge(in.ID)
 		if err != nil {
-			responce.Error = fmt.Sprintln("This metric doesn't exist", http.StatusNotFound)
+			return nil, status.Errorf(codes.NotFound, "This metric %s doesn't exist", in.ID)
 		}
 	case in.Mtype == counter:
 		responce.Delta, err = s.storage.GetMetricCounter(in.ID)
 		if err != nil {
-			responce.Error = fmt.Sprintln("This metric doesn't exist", http.StatusNotFound)
+			return nil, status.Errorf(codes.NotFound, "This metric %s doesn't exist", in.ID)
 		}
 	}
 

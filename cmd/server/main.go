@@ -35,7 +35,7 @@ func main() {
 	var Storage *storage.MetricsStorage
 	context := context.Background()
 	config := config.New()
-	hasher := hasher.Mew(config.Key)
+	hasher := hasher.New(config.Key)
 	if config.DBAddress != "" {
 		dbsaver, err := dbsaver.New(context, config.DBAddress)
 		if err != nil {
@@ -114,7 +114,7 @@ func main() {
 		log.Println("gRRC server shutdown")
 		close(idleConnsClosed)
 	}()
-	metricServer := handlersproto.NewMetricServer(Storage)
+	metricServer := handlersproto.NewMetricServer(Storage, hasher, config.Restore)
 	pb.RegisterMetricsServer(s, &metricServer)
 
 	fmt.Println("Сервер gRPC начал работу")
