@@ -34,7 +34,7 @@ func TestNew(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := New(tt.args.hasher, tt.args.endpoint); !reflect.DeepEqual(got, tt.want) {
+			if got := New(tt.args.hasher, tt.args.endpoint, tt.want.keyAddress); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("New() = %+v, want %+v", got, tt.want)
 			}
 		})
@@ -59,7 +59,7 @@ func TestSender_Go(t *testing.T) {
 		{
 			name: "positive test",
 			fields: fields{
-				hasher:   hasher.Mew(""),
+				hasher:   hasher.New(""),
 				endpoint: endpoint,
 			},
 			args: args{
@@ -99,7 +99,7 @@ func TestSender_bodyBuild(t *testing.T) {
 		{
 			name: "positive test gauge",
 			fields: fields{
-				hasher:   hasher.Mew(""),
+				hasher:   hasher.New(""),
 				endpoint: endpoint,
 			},
 			args: args{
@@ -111,7 +111,7 @@ func TestSender_bodyBuild(t *testing.T) {
 		{
 			name: "positive test gauge",
 			fields: fields{
-				hasher:   hasher.Mew(""),
+				hasher:   hasher.New(""),
 				endpoint: endpoint,
 			},
 			args: args{

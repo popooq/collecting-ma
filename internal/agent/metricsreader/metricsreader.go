@@ -6,6 +6,7 @@ import (
 	"errors"
 	"log"
 	"math/rand"
+	"os"
 	"runtime"
 	"sync"
 	"time"
@@ -17,34 +18,34 @@ import (
 	"github.com/popooq/collectimg-ma/internal/storage"
 )
 
-type (
-	// Reader структура хранит информацию о конфигурации и sender
-	Reader struct {
-		sndr         sender.Sender   // sdnr - отправляет метрики на поле
-		tickerpoll   time.Duration   // tickerpoll - частота обновления метрик
-		tickerreport time.Duration   // tickerreport - частота отправления метрик
-		address      string          // address - адресс сервера куда отправляются метрики
-		rate         int             // rate - количество горутин
-		pollCount    storage.Counter // pollCount - счетчик отпрпвалений
-	}
-	metrics struct {
-		value any
-		name  string
-	}
-	worker struct {
-		workchan   chan metrics
-		buffer     int
-		wg         *sync.WaitGroup
-		cancelFunc context.CancelFunc
-		sndr       sender.Sender
-	}
-	//WorkerIface
-	workerIface interface {
-		start(pctx context.Context)
-		stop()
-		queueTask(mem metrics) error
-	}
-)
+// Reader структура хранит информацию о конфигурации и sender
+type Reader struct {
+	sndr         sender.Sender   // sdnr - отправляет метрики на поле
+	tickerpoll   time.Duration   // tickerpoll - частота обновления метрик
+	tickerreport time.Duration   // tickerreport - частота отправления метрик
+	address      string          // address - адресс сервера куда отправляются метрики
+	rate         int             // rate - количество горутин
+	pollCount    storage.Counter // pollCount - счетчик отпрпвалений
+	shutdown     bool            // shutdown - проверка сисколов
+}
+type metrics struct {
+	value any
+	name  string
+}
+type worker struct {
+	workchan   chan metrics
+	buffer     int
+	wg         *sync.WaitGroup
+	cancelFunc context.CancelFunc
+	sndr       sender.Sender
+}
+
+// WorkerIface
+type workerIface interface {
+	start(pctx context.Context)
+	stop()
+	queueTask(mem metrics) error
+}
 
 func New(sndr sender.Sender, tickerpoll time.Duration, tickerreport time.Duration, address string, rate int) *Reader {
 	return &Reader{
@@ -107,16 +108,18 @@ func (w *worker) queueTask(mem metrics) error {
 	return nil
 }
 
-func (r Reader) Run() {
+func (r Reader) Run(sigs chan os.Signal) {
 	var (
 		memStat      runtime.MemStats
 		memoryStat   *mem.VirtualMemoryStat
 		cpuUsage     []float64
 		tickerpoll   = time.NewTicker(r.tickerpoll)
 		tickerreport = time.NewTicker(r.tickerreport)
+		graceperiod  = 15 * time.Second
 	)
 
-	graceperiod := 15 * time.Second
+	r.shutdown = false
+
 	ctx := context.Background()
 	w := newWorker(r.rate, r.sndr)
 
@@ -127,13 +130,18 @@ func (r Reader) Run() {
 		cancel()
 	}()
 
-	for {
+	for !r.shutdown {
 		select {
+
+		case <-sigs:
+			r.shutdown = true
+
 		case <-tickerpoll.C:
 			runtime.ReadMemStats(&memStat)
 			memoryStat, _ = mem.VirtualMemory()
 			cpuUsage, _ = cpu.Percent(0, false)
 			r.pollCount++
+
 		case <-tickerreport.C:
 			random := float64(rand.Uint32())
 			mem := memStat

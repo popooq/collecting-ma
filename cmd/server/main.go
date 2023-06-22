@@ -4,18 +4,25 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"google.golang.org/grpc"
 
 	"github.com/popooq/collectimg-ma/internal/server/config"
 	"github.com/popooq/collectimg-ma/internal/server/handlers"
+	"github.com/popooq/collectimg-ma/internal/server/handlersproto"
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/dbsaver"
 	"github.com/popooq/collectimg-ma/internal/utils/filesaver"
 	"github.com/popooq/collectimg-ma/internal/utils/hasher"
+	pb "github.com/popooq/collectimg-ma/proto"
 )
 
 var (
@@ -28,7 +35,7 @@ func main() {
 	var Storage *storage.MetricsStorage
 	context := context.Background()
 	config := config.New()
-	hasher := hasher.Mew(config.Key)
+	hasher := hasher.New(config.Key)
 	if config.DBAddress != "" {
 		dbsaver, err := dbsaver.New(context, config.DBAddress)
 		if err != nil {
@@ -44,7 +51,7 @@ func main() {
 		Storage = storage.New(saver)
 	}
 
-	handler := handlers.New(Storage, hasher, config.Restore)
+	handler := handlers.New(Storage, hasher, config.Restore, config.TrustedSubnet, config.CryptoKey)
 	router := chi.NewRouter()
 	router.Mount("/", handler.Route())
 	router.Mount("/debug", middleware.Profiler())
@@ -64,5 +71,58 @@ func main() {
 	}
 	fmt.Println("Build commit: N/A")
 
-	log.Fatal(http.ListenAndServe(config.Address, handlers.GzipHandler(router)))
+	server := &http.Server{
+		Addr:    config.Address,
+		Handler: router,
+	}
+
+	sig := make(chan os.Signal, 1)
+	signal.Notify(sig, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+
+	idleConnsClosed := make(chan struct{})
+
+	go func() {
+		<-sig
+
+		if err := server.Shutdown(context); err != nil {
+
+			log.Printf("\nHTTP server Shutdown: %v", err)
+		}
+		close(idleConnsClosed)
+	}()
+
+	if !config.GRPC {
+		log.Println("starting server over http/1")
+		err := server.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
+		}
+	}
+
+	if config.GRPC {
+		log.Println("starting server over http/2")
+		listen, err := net.Listen("tcp", ":3200")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		s := grpc.NewServer()
+
+		go func() {
+			<-sig
+
+			s.GracefulStop()
+			log.Println("gRRC server shutdown")
+			close(idleConnsClosed)
+		}()
+		metricServer := handlersproto.NewMetricServer(Storage, hasher, config.Restore)
+		pb.RegisterMetricsServer(s, &metricServer)
+
+		fmt.Println("Сервер gRPC начал работу")
+
+		if err := s.Serve(listen); err != nil {
+			log.Fatal(err)
+		}
+	}
+	<-idleConnsClosed
 }

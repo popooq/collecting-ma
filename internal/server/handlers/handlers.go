@@ -22,6 +22,7 @@ import (
 
 	"github.com/popooq/collectimg-ma/internal/storage"
 	"github.com/popooq/collectimg-ma/internal/utils/encoder"
+	"github.com/popooq/collectimg-ma/internal/utils/encryptor"
 	"github.com/popooq/collectimg-ma/internal/utils/hasher"
 )
 
@@ -33,8 +34,10 @@ const (
 type (
 	// Handler содержит информацию о хендлере
 	Handler struct {
-		storage *storage.MetricsStorage
-		hasher  *hasher.Hash
+		storage       *storage.MetricsStorage
+		hasher        *hasher.Hash
+		encryptor     string
+		trustedSubnet string
 	}
 	gzipWriter struct {
 		http.ResponseWriter
@@ -43,7 +46,7 @@ type (
 )
 
 // New создает новый хендлер
-func New(stor *storage.MetricsStorage, hasher *hasher.Hash, restore bool) Handler {
+func New(stor *storage.MetricsStorage, hasher *hasher.Hash, restore bool, tsubnet, enc string) Handler {
 	if restore {
 		err := stor.Load()
 		if err != nil {
@@ -51,8 +54,10 @@ func New(stor *storage.MetricsStorage, hasher *hasher.Hash, restore bool) Handle
 		}
 	}
 	return Handler{
-		storage: stor,
-		hasher:  hasher,
+		storage:       stor,
+		hasher:        hasher,
+		encryptor:     enc,
+		trustedSubnet: tsubnet,
 	}
 
 }
@@ -65,23 +70,35 @@ func (h Handler) Route() *chi.Mux {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(h.trustedWare)
 
-	r.Post("/update/{mType}/{mName}/{mValue}", h.collectMetrics)
-	r.Get("/value/{mType}/{mName}", h.metricValue)
-	r.Post("/update/", h.collectJSONMetric)
-	r.Post("/value/", h.metricJSONValue)
-	r.Post("/updates/", h.collectDBMetrics)
-	r.Get("/", h.allMetrics)
+	r.Post("/update/{mType}/{mName}/{mValue}", h.addMetrics)
+	r.Get("/value/{mType}/{mName}", h.getMetric)
+	r.Post("/update/", h.addJSONMetric)
+	r.Post("/value/", h.getMetricJSON)
+	r.Post("/updates/", h.addDBMetrics)
+	r.Get("/", h.getAllMetrics)
 	r.Get("/ping", h.pingDB)
 
 	return r
 }
 
-func (h Handler) collectMetrics(w http.ResponseWriter, r *http.Request) {
+func (h Handler) trustedWare(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ipStr := r.Header.Get("X-Real-IP")
+		log.Println(h.trustedSubnet != "" && ipStr != h.trustedSubnet)
+		if h.trustedSubnet != "" && ipStr != h.trustedSubnet {
+			w.WriteHeader(403)
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (h Handler) addMetrics(w http.ResponseWriter, r *http.Request) {
 	metricTypeParam := chi.URLParam(r, "mType")
 	metricNameParam := chi.URLParam(r, "mName")
 	metricValueParam := chi.URLParam(r, "mValue")
-
+	log.Printf("metricTypeParam: %s \n metricNameParam: %s \n metricValueParam: %s", metricTypeParam, metricNameParam, metricValueParam)
 	switch {
 	case metricTypeParam == gauge:
 		value, err := strconv.ParseFloat(metricValueParam, 64)
@@ -114,7 +131,7 @@ func (h Handler) collectMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h Handler) metricValue(w http.ResponseWriter, r *http.Request) {
+func (h Handler) getMetric(w http.ResponseWriter, r *http.Request) {
 	var metricValue string
 
 	metricTypeParam := chi.URLParam(r, "mType")
@@ -153,7 +170,7 @@ func (h Handler) metricValue(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h Handler) allMetrics(w http.ResponseWriter, r *http.Request) {
+func (h Handler) getAllMetrics(w http.ResponseWriter, r *http.Request) {
 	allMetrics := h.storage.GetAllMetrics()
 	listOfMetrics := fmt.Sprintf("%+v", allMetrics)
 
@@ -166,12 +183,17 @@ func (h Handler) allMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h Handler) collectJSONMetric(w http.ResponseWriter, r *http.Request) {
+func (h Handler) addJSONMetric(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Printf("error during ReadAll: %s", err)
 	}
 
+	encryptor, _ := encryptor.New(h.encryptor, "private")
+	body, err = encryptor.Decrypt(body)
+	if err != nil {
+		log.Panicln(err)
+	}
 	encoder := encoder.New()
 
 	err = encoder.Unmarshal(body)
@@ -213,10 +235,22 @@ func (h Handler) collectJSONMetric(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h Handler) metricJSONValue(w http.ResponseWriter, r *http.Request) {
+func (h Handler) getMetricJSON(w http.ResponseWriter, r *http.Request) {
 	encoder := encoder.New()
 
-	err := encoder.Decode(r.Body)
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+
+		log.Println("read request body error!")
+	}
+
+	encryptor, _ := encryptor.New(h.encryptor, "private")
+	body, err = encryptor.Decrypt(body)
+	if err != nil {
+		log.Println(err)
+	}
+
+	err = encoder.Unmarshal(body)
 	if err != nil {
 		http.Error(w, fmt.Sprintln("something went wrong while decoding", err), http.StatusBadRequest)
 	}
@@ -275,7 +309,7 @@ func (h Handler) pingDB(w http.ResponseWriter, r *http.Request) {
 	w.Write(nil)
 }
 
-func (h Handler) collectDBMetrics(w http.ResponseWriter, r *http.Request) {
+func (h Handler) addDBMetrics(w http.ResponseWriter, r *http.Request) {
 	var Metrics []encoder.Encode
 
 	body, err := io.ReadAll(r.Body)
