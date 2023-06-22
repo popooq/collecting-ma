@@ -4,9 +4,14 @@ package metrics;
 
 option go_package = "collecting-ma/proto";
 
+enum mtype {
+    GAUGE = 0;
+    COUNTER = 1;
+}
+
 message Metric {
     string ID = 1;
-    string mtype = 2;
+    mtype mtype = 2;
     int64 delta = 3;
     double value = 4;
     string hash = 5;
@@ -17,12 +22,11 @@ message AddMetricRequest{
 }
 
 message AddMetricResponse{
-    string error = 4;
 }
 
 message GetMetricRequest{
     string ID = 1;
-    string mtype = 2;
+    mtype mtype = 2;
 }
 
 message GetMetricResponse{

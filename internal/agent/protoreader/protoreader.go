@@ -91,11 +91,13 @@ func MetricRequest(c pb.MetricsClient, sigs chan os.Signal, poll time.Duration, 
 		memStat runtime.MemStats
 		// memoryStat     *mem.VirtualMemoryStat
 		// cpuUsage       []float64
-		tickerpoll        = time.NewTicker(poll)
-		tickerreport      = time.NewTicker(report)
-		graceperiod       = 15 * time.Second
-		shutdown     bool = true
+		tickerpoll   = time.NewTicker(poll)
+		tickerreport = time.NewTicker(report)
+		graceperiod  = 15 * time.Second
+		shutdown     bool
 	)
+
+	shutdown = true
 
 	ctx := context.Background()
 	w := newWorker(rate)
@@ -165,9 +167,7 @@ func send(c pb.MetricsClient, name string, value any, hasher hasher.Hash) {
 
 	types := strings.ToLower(strings.TrimPrefix(fmt.Sprintf("%T", value), "storage."))
 
-	metric.Mtype = types
-
-	switch metric.Mtype {
+	switch types {
 	case "float64":
 		assertvalue, ok := value.(float64)
 		if !ok {
@@ -175,6 +175,7 @@ func send(c pb.MetricsClient, name string, value any, hasher hasher.Hash) {
 		}
 		metric.ID = name
 		metric.Value = assertvalue
+		metric.Mtype = 0
 	case "counter":
 		assertvalue, ok := value.(int64)
 		if !ok {
@@ -182,6 +183,7 @@ func send(c pb.MetricsClient, name string, value any, hasher hasher.Hash) {
 		}
 		metric.ID = name
 		metric.Delta = assertvalue
+		metric.Mtype = 1
 	}
 
 	hash := hasher.HashergRPC(metric)
@@ -191,13 +193,10 @@ func send(c pb.MetricsClient, name string, value any, hasher hasher.Hash) {
 		log.Printf("error: %s", err)
 	}
 
-	resp, err := c.AddMetric(context.Background(), &pb.AddMetricRequest{
+	_, err = c.AddMetric(context.Background(), &pb.AddMetricRequest{
 		Metric: metric,
 	})
 	if err != nil {
 		log.Fatalf("err %s", err)
-	}
-	if resp.Error != "" {
-		log.Fatalf("resp err %s", resp.Error)
 	}
 }

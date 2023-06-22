@@ -9,6 +9,11 @@ import (
 	pb "github.com/popooq/collectimg-ma/proto"
 )
 
+const (
+	gauge   pb.Mtype = 0
+	counter pb.Mtype = 1
+)
+
 // Hash хранит ключ шифрвания
 type Hash struct {
 	Key []byte // Key клчю шифрования
@@ -59,9 +64,9 @@ func (hsh *Hash) HashergRPC(metric *pb.Metric) string {
 	}
 
 	switch metric.Mtype {
-	case "counter":
+	case counter:
 		data = fmt.Sprintf("%s:%s:%d", metric.ID, metric.Mtype, metric.Delta)
-	case "gauge":
+	case gauge:
 		data = fmt.Sprintf("%s:gauge:%f", metric.ID, metric.Value)
 	}
 

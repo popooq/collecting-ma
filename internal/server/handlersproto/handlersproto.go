@@ -12,8 +12,8 @@ import (
 )
 
 const (
-	gauge   string = "float64"
-	counter string = "int64"
+	gauge   pb.Mtype = 0
+	counter pb.Mtype = 1
 )
 
 type MetricsServer struct {
