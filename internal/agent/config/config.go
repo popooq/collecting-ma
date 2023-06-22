@@ -38,7 +38,7 @@ func New() *Config {
 	flag.DurationVar(&cfg.ReportInterval, "r", reportTime, "metric send timer")
 	flag.IntVar(&cfg.Rate, "l", 100, "worker rate")
 	flag.StringVar(&cfg.ConfigFile, "c", "", "file of configuration")
-	flag.BoolVar(&cfg.GRPC, "g", true, "working over gRPC")
+	flag.BoolVar(&cfg.GRPC, "g", false, "working over gRPC")
 	flag.Parse()
 
 	if err := env.Parse(&cfg); err != nil {

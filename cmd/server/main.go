@@ -99,29 +99,30 @@ func main() {
 		}
 	}
 
-	log.Println("starting server over http/2")
-	listen, err := net.Listen("tcp", ":3200")
-	if err != nil {
-		log.Fatal(err)
+	if config.GRPC {
+		log.Println("starting server over http/2")
+		listen, err := net.Listen("tcp", ":3200")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		s := grpc.NewServer()
+
+		go func() {
+			<-sig
+
+			s.GracefulStop()
+			log.Println("gRRC server shutdown")
+			close(idleConnsClosed)
+		}()
+		metricServer := handlersproto.NewMetricServer(Storage, hasher, config.Restore)
+		pb.RegisterMetricsServer(s, &metricServer)
+
+		fmt.Println("Сервер gRPC начал работу")
+
+		if err := s.Serve(listen); err != nil {
+			log.Fatal(err)
+		}
 	}
-
-	s := grpc.NewServer()
-
-	go func() {
-		<-sig
-
-		s.GracefulStop()
-		log.Println("gRRC server shutdown")
-		close(idleConnsClosed)
-	}()
-	metricServer := handlersproto.NewMetricServer(Storage, hasher, config.Restore)
-	pb.RegisterMetricsServer(s, &metricServer)
-
-	fmt.Println("Сервер gRPC начал работу")
-
-	if err := s.Serve(listen); err != nil {
-		log.Fatal(err)
-	}
-
 	<-idleConnsClosed
 }

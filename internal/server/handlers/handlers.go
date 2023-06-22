@@ -86,10 +86,11 @@ func (h Handler) Route() *chi.Mux {
 func (h Handler) trustedWare(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ipStr := r.Header.Get("X-Real-IP")
+		log.Println(h.trustedSubnet != "" && ipStr != h.trustedSubnet)
 		if h.trustedSubnet != "" && ipStr != h.trustedSubnet {
 			w.WriteHeader(403)
 		}
-
+		next.ServeHTTP(w, r)
 	})
 }
 
@@ -97,7 +98,7 @@ func (h Handler) addMetrics(w http.ResponseWriter, r *http.Request) {
 	metricTypeParam := chi.URLParam(r, "mType")
 	metricNameParam := chi.URLParam(r, "mName")
 	metricValueParam := chi.URLParam(r, "mValue")
-
+	log.Printf("metricTypeParam: %s \n metricNameParam: %s \n metricValueParam: %s", metricTypeParam, metricNameParam, metricValueParam)
 	switch {
 	case metricTypeParam == gauge:
 		value, err := strconv.ParseFloat(metricValueParam, 64)

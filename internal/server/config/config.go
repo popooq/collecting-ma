@@ -40,7 +40,7 @@ func New() *Config {
 	flag.StringVar(&cfg.CryptoKey, "crypto-key", "", "private key file")
 	flag.StringVar(&cfg.ConfigFile, "c", "", "file of configuration")
 	flag.StringVar(&cfg.TrustedSubnet, "t", "", "trusted subnet")
-	flag.BoolVar(&cfg.GRPC, "g", true, "start server over gRPC")
+	flag.BoolVar(&cfg.GRPC, "g", false, "start server over gRPC")
 
 	flag.Parse()
 

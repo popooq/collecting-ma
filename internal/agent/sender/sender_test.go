@@ -59,7 +59,7 @@ func TestSender_Go(t *testing.T) {
 		{
 			name: "positive test",
 			fields: fields{
-				hasher:   hasher.Mew(""),
+				hasher:   hasher.New(""),
 				endpoint: endpoint,
 			},
 			args: args{
@@ -99,7 +99,7 @@ func TestSender_bodyBuild(t *testing.T) {
 		{
 			name: "positive test gauge",
 			fields: fields{
-				hasher:   hasher.Mew(""),
+				hasher:   hasher.New(""),
 				endpoint: endpoint,
 			},
 			args: args{
@@ -111,7 +111,7 @@ func TestSender_bodyBuild(t *testing.T) {
 		{
 			name: "positive test gauge",
 			fields: fields{
-				hasher:   hasher.Mew(""),
+				hasher:   hasher.New(""),
 				endpoint: endpoint,
 			},
 			args: args{
